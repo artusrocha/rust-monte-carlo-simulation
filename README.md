@@ -1,4 +1,4 @@
-### Business scenario description
+### Business Scenario Description
 
 The necessity is to simulate multiple scenarios to predict the possibilities of losses in the management of a logistics distribution center with with hundreds of thousands of different products(SKU's) in stock.
 
@@ -21,9 +21,9 @@ The results of simulations must to show, day by day for the next 90 days, the pr
 
 ---
 
+#### Monte Carlo Simulation Scenarios
 
-> The simulations will not be based only on knowledge about scheduled entries and withdrawals. But also in supply and demand forecasts based on historical data from the last 5 years and random shocks. *Forming multiple Monte Carlo Simulation scenarios.*
-
+> The simulations will not be based only on knowledge about scheduled entries and withdrawals. But also in supply and demand forecasts based on historical data from the last 5 years and random shocks. Forming multiple ***Monte Carlo Simulation*** scenarios.
 
 The scenarios will be distributed equally across 9 categories:
    - supply on an uptrend, demand stable
@@ -32,10 +32,16 @@ The scenarios will be distributed equally across 9 categories:
    - supply on a downtrend, demand stable
    - supply on a downtrend, demand on a downtrend
    - supply on a downtrend, demand on an uptrend
-   - stable supply, stable demand
+   - stable supply, stable demand 
    - stable supply, demand on a downtrend
    - stable supply, demand on an uptrend
 
-===
+The trend will be represented by a multiply factor over the historical referential data, e.g (uptrend of 20% will be the multiply factor: 1.2)
 
-### Architecture definition
+
+
+
+---
+---
+
+### Architecture Definition
