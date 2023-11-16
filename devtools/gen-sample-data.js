@@ -1,10 +1,20 @@
 const fs = require("fs");
+const path = require('node:path'); 
 
 let i_batch_id = 1;
 const default_time_limit = 7;
 
 const item_limit = 50000;
-const date = new Date()
+if ( ! process.argv[2]) {
+    console.log('missing date parameter. e.g:');
+    const dir=path.posix.basename(path.dirname(process.argv[1]))
+    console.log(`   ${path.posix.basename(process.argv[0])} ${dir}/${path.posix.basename(process.argv[1])} 2023-11-14`)
+    process.exit(1)
+
+}
+console.log(`parsing date: ${process.argv[2]}`);
+const date = new Date(process.argv[2])
+console.log(`using date: ${date.toISOString()}`);
 
 const item_writer = getWriter("sample/data/item.tsv")
 const item_mov_hist_writer = getWriter("sample/data/item_mov_hist.tsv")
@@ -39,17 +49,21 @@ function genItem(item_id) {
 
     item_writer.write( [item_id, default_time_limit, true, date.toISOString(), date.toISOString()].join("\t").concat("\n") )
 
-//    item_mov_hist_writer.cork()
     let hist_date = new Date(2017, 11, 9)
     while ( hist_date.isBefore(date) ) {
         hist_date.setDate(hist_date.getDate() + 1)
         item_mov_hist_writer.write( 
-            [item_id, getRandomIntBetween(20, 100), getRandomIntBetween(20, 100), hist_date.toISOString(), hist_date.getWeekNumber(), hist_date.toISOString()]
+            [
+                item_id,
+                getRandomIntBetween(20, 100),
+                getRandomIntBetween(20, 100),
+                hist_date.toISOString(),
+                hist_date.getWeekNumber(),
+                hist_date.toISOString()
+            ]
             .join("\t").concat("\n")
         )
     }
-//    process.nextTick(() => item_mov_hist_writer.uncork());
-
 
     for (let day=15; day>=1; day--) {
         const entry_date = new Date()
@@ -58,7 +72,19 @@ function genItem(item_id) {
         deadline_date.setDate(entry_date.getDate() + default_time_limit)
         const entry_date_iso = entry_date.toISOString()
         const deadline_date_iso = deadline_date.toISOString()
-        item_batch_writer.write([i_batch_id++, item_id, entry_date_iso, deadline_date_iso, 'null', entry_date_iso, entry_date_iso].join("\t").concat("\n"))
+        const quantity = getRandomIntBetween(10, 30)
+        item_batch_writer.write(
+            [
+                i_batch_id++,
+                item_id,
+                entry_date_iso,
+                deadline_date_iso,
+                deadline_date > date ? deadline_date : 'null',
+                entry_date_iso,
+                entry_date_iso,
+                quantity
+            ]
+            .join("\t").concat("\n"))
     }
 
     setImmediate(() => genItem(++item_id));

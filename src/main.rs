@@ -2,6 +2,7 @@ use sqlx::{
     database::HasArguments, postgres::PgPoolOptions, query::QueryAs, types::BigDecimal, FromRow,
     Pool, Postgres,
 };
+
 use std::{
     collections::{HashMap, LinkedList},
     env,
@@ -24,6 +25,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reference_date = "2023-06-25";
     let days_to_analyze = 90;
     let item_id = 16489;
+    let default_time_limit = 20;
+    let stock_limit = BigDecimal::from(100);
 
     let (initial_date, final_date) = get_initial_and_final_dates(reference_date, days_to_analyze)?;
     let (initial_week, final_week) = get_initial_and_final_weeks(initial_date, final_date);
@@ -43,6 +46,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let simulation_day0 = SimulationDay {
         date: initial_date,
         batches: LinkedList::from([batch]),
+        stock_time_limit_exceeded: None,
+        stock_shortage: None,
+        stock_limit_exceeded: None,
     };
 
     let mut simulation = Simulation {
@@ -69,15 +75,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("last_batch.len(): {:?}", last_batches.len());
                 let mut next_batches = last_batches.to_owned();
                 eprintln!("1: next_batches.len(): {:?}", next_batches.len());
-                eprintln!("front: {:?}, back: {:?}", next_batches.front().unwrap(), next_batches.back().unwrap());
+                eprintln!(
+                    "front: {:?}, back: {:?}",
+                    next_batches.front(),
+                    next_batches.back()
+                );
 
                 // do withdraw mov
                 let mut withdraw_qty = date_hist.withdrawal_qty.clone();
-                eprintln!("before withdraw | withdraw_qty: {:?}, batches: {:?}", withdraw_qty, next_batches.iter().map(|e| e.quantity.clone()).reduce(|acc, e| acc + e ) );
+                eprintln!(
+                    "before withdraw | withdraw_qty: {:?}, batches: {:?}",
+                    withdraw_qty,
+                    next_batches
+                        .iter()
+                        .map(|e| e.quantity.clone())
+                        .reduce(|acc, e| acc + e)
+                );
                 while withdraw_qty > BigDecimal::from(0) && next_batches.len() > 0 {
                     match next_batches.front_mut() {
                         Some(old) => {
-                            //eprintln!("old: {:?}", old);
                             if old.quantity > withdraw_qty {
                                 old.quantity = &old.quantity - withdraw_qty;
                                 withdraw_qty = BigDecimal::from(0);
@@ -85,31 +101,95 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 withdraw_qty = withdraw_qty - &old.quantity;
                                 next_batches.pop_front();
                             }
-
-                        },
-                        None => {},
+                        }
+                        None => {}
                     };
                 }
-                eprintln!("after withdraw | withdraw_qty: {:?}, batches: {:?}", withdraw_qty, next_batches.iter().map(|e| e.quantity.clone()).reduce(|acc, e| acc + e ) );
+                eprintln!(
+                    "after withdraw | withdraw_qty: {:?}, batches: {:?}",
+                    withdraw_qty,
+                    next_batches
+                        .iter()
+                        .map(|e| e.quantity.clone())
+                        .reduce(|acc, e| acc + e)
+                );
                 eprintln!("2: next_batches.len(): {:?}", next_batches.len());
+                let stock_shortage = if withdraw_qty > BigDecimal::from(0) {
+                    Some(withdraw_qty)
+                } else {
+                    None
+                };
 
                 // do entry mov
-                eprintln!("before entry | entry_qty: {:?}, batches: {:?}", date_hist.entry_qty, next_batches.iter().map(|e| e.quantity.clone()).reduce(|acc, e| acc + e ) );
+                let batches_qty_sum = next_batches
+                    .iter()
+                    .map(|e| e.quantity.clone())
+                    .reduce(|acc, e| acc + e)
+                    .unwrap_or(BigDecimal::from(0));
+                eprintln!(
+                    "before entry | entry_qty: {:?}, batches: {:?}",
+                    date_hist.entry_qty, batches_qty_sum
+                );
+                let available = &stock_limit - batches_qty_sum;
+                let (final_entry_qty, exceeded_entry_qty) = if available > date_hist.entry_qty {
+                    (date_hist.entry_qty.clone(), BigDecimal::from(0))
+                } else {
+                    (available.clone(), (date_hist.entry_qty.clone() - available))
+                };
                 next_batches.push_back(SimulationItemBatch {
-                    quantity: date_hist.entry_qty.clone(), //TODO add random variance
-                    deadline_date: date.clone(),
+                    quantity: final_entry_qty,
+                    deadline_date: date
+                        .clone()
+                        .checked_add_days(Days::new(default_time_limit))
+                        .unwrap(),
                 });
-                eprintln!("after entry | entry_qty: {:?}, batches: {:?}", date_hist.entry_qty, next_batches.iter().map(|e| e.quantity.clone()).reduce(|acc, e| acc + e ) );
+                eprintln!(
+                    "after entry | entry_qty: {:?}, batches: {:?}",
+                    date_hist.entry_qty,
+                    next_batches
+                        .iter()
+                        .map(|e| e.quantity.clone())
+                        .reduce(|acc, e| acc + e)
+                );
                 eprintln!("3: next_batches.len(): {:?}", next_batches.len());
-                
-                eprintln!("front: {:?}, back: {:?}", next_batches.front().unwrap(), next_batches.back().unwrap());
-                
+                eprintln!(
+                    "front: {:?}, back: {:?}",
+                    next_batches.front(),
+                    next_batches.back()
+                );
+                let stock_limit_exceeded = if exceeded_entry_qty > BigDecimal::from(0) {
+                    Some(exceeded_entry_qty)
+                } else {
+                    None
+                };
+
+                // remove expired batch
+                let mut removed_quantity = BigDecimal::from(0);
+                next_batches = next_batches
+                    .into_iter()
+                    .filter(|e| {
+                        let is_within_time = e.deadline_date >= date;
+                        if ! is_within_time {
+                            removed_quantity += e.quantity.clone();
+                        }
+                        is_within_time
+                    })
+                    .collect::<LinkedList<SimulationItemBatch>>();
+                let stock_time_limit_exceeded = if removed_quantity > BigDecimal::from(0) {
+                    Some(removed_quantity)
+                } else {
+                    None
+                };
+
                 let next_day = SimulationDay {
                     date,
                     batches: next_batches,
+                    stock_shortage,
+                    stock_limit_exceeded,
+                    stock_time_limit_exceeded,
                 };
+                eprintln!("{:?}", &next_day);
                 simulation.days.push(next_day);
-
             }
             None => {
                 let default = get_default_hist(item_id.into(), dow);
@@ -137,11 +217,16 @@ struct Simulation {
     days: Vec<SimulationDay>,
 }
 
+
+#[derive(Debug)]
 struct SimulationDay {
     date: NaiveDate,
     // entry_qty: BigDecimal,
     // withdrawal_qty: BigDecimal,
     batches: LinkedList<SimulationItemBatch>,
+    stock_shortage: Option<BigDecimal>,
+    stock_limit_exceeded: Option<BigDecimal>,
+    stock_time_limit_exceeded: Option<BigDecimal>,
 }
 
 #[derive(Debug, Clone)]
