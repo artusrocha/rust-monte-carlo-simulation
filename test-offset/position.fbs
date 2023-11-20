@@ -1,0 +1,22 @@
+namespace pos;
+
+//table acc {
+//    id: uint32; //INTEGER NOT NULL PRIMARY KEY,
+//    par_id: uint16; //SMALLINT NOT NULL,
+//    dst: uint32; //INTEGER NOT NULL
+//    pos: [t5];
+//}
+
+table t5 {
+    dst: uint32;
+    acc_id: uint32;
+    ins_id: uint32;
+    grp: uint16;
+    grpv: ubyte;
+    qty: float;
+    factor: float;
+    ratio: float;
+}
+
+root_type t5;
+//root_type acc;
