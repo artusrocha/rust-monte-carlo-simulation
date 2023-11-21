@@ -1,9 +1,15 @@
 const fs = require("fs");
 const path = require('node:path'); 
 
-const item_limit = 2_000_000;
 const acc_writer = getWriter("/tmp/acc.tsv")
 const t5_writer = getWriter("/tmp/t5.tsv")
+
+const par_id = process.argv[2] ? Number(process.argv[2]) : 1
+const item_limit = process.argv[3] ? Number(process.argv[3]) : 1000
+const ONE_PERCENT=Math.floor(item_limit/100)
+
+console.log(process.argv)
+console.log({par_id, item_limit, ONE_PERCENT})
 
 function getWriter (filename) {
     const writer = fs.createWriteStream(filename);
@@ -11,13 +17,8 @@ function getWriter (filename) {
     return writer;
 }
 
-function getRandomIntBetween(min, max) {
-    return min+Math.floor(Math.random() * (max-min))
-}
 
-const ONE_PERCENT=Math.floor(item_limit/100)
-
-function gen_item(acc_id, par_id) {
+function gen_item(acc_id) {
 
     if (counter >= item_limit)
         return;
@@ -47,11 +48,7 @@ function gen_item(acc_id, par_id) {
         console.log(Math.floor(100/(item_limit/counter)), "%")
     }
 
-    setImmediate(() => gen_item(++acc_id, par_id) );
-}
-
-function gen_random_fields(n) {
-    return [...Array(n).keys()].map( () => Math.floor(Math.random() * 10_000_000))
+    setImmediate(() => gen_item(++acc_id) );
 }
 
 function write_item(acc_id, ins_id, grp, grpv, long_or_short) {
@@ -78,4 +75,4 @@ function rand_arr(arr) {
 }
 
 let counter = 0
-gen_item(1, 1)
+gen_item((par_id*1_000_000))

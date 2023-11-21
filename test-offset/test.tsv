@@ -1,0 +1,27 @@
+100k
+type	t_query	t_convert	t_aggr	t_total
+query_aggr	298			298
+query_full	287		21	309
+save_rds_fbs		50		53
+read_rds_fbs	143	0	9	153
+read_rds_mp	335	89	49	473
+read_rds_mp_hg	22	173		196
+
+500k
+type	t_query	t_convert	t_aggr	t_total
+query_aggr	1095			1095
+query_full	1589		161	1750
+save_rds_fbs		442		467
+read_rds_fbs	885	2	42	930
+read_rds_mp	965	505	439	1910
+read_rds_mp_hg	513	696		1210
+
+2mi
+type	t_query	t_convert	t_aggr	t_total
+query_aggr	2032			2032
+query_full	4457		654	5111
+save_rds_fbs		1635		1742
+read_rds_fbs	3205	35	169	3411
+read_rds_mp	2561	1978	1775	6314
+read_rds_mp_hg	1433	1779		3213
+

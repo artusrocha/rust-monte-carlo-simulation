@@ -67,7 +67,10 @@ async fn _main () -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let par_id = 1;
+    let args: Vec<String> = env::args().collect();
+
+    let par_id = if args.len()>1 && !args[1].is_empty() { args[1].parse().unwrap() } else { 1 };
+    eprintln!("par_id {}", par_id);
 
     let db = get_db_conn_pool().await?;
 
@@ -81,51 +84,69 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         select * from (select dst, grp, sum(ratio) as sum from acc join t5 on t5.acc_id=acc.id where acc.par_id=$1 group by dst, grp); -- where sum>0;
     ");
 
+    println!("type\tt_query\tt_convert\tt_aggr\tt_total");
+
     let start = Instant::now();
     let query_aggr_res = query_aggr.bind(par_id).fetch_all(&db).await?;
     eprintln!("query_aggr | query_aggr_res.len(): {:?} | Time elapsed {:?}", query_aggr_res.len(), start.elapsed());
+    println!("{}\t{}\t{}\t{}\t{}", "query_aggr", start.elapsed().as_millis(), "", "",start.elapsed().as_millis());
 
     eprintln!("\n============================\n");
  
     let start = Instant::now();
     let query_res = query.bind(par_id).fetch_all(&db).await?;
     eprintln!("query | query_res.len: {:?} | Time elapsed {:?}", query_res.len(), start.elapsed());
+    let t_query = start.elapsed();
 
     let start = Instant::now();
     let pos_aggr = do_post_aggregation(&query_res);
     eprintln!("pos_aggr | query_res.len(): {:?} | pos_aggr.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_aggr.len(), start.elapsed());
+    let t_aggr = start.elapsed();
+    println!("{}\t{}\t{}\t{}\t{}", "query_full", t_query.as_millis(), "", t_aggr.as_millis(), (t_query + t_aggr).as_millis());
 
     eprintln!("\n============================\n");
 
     let start = Instant::now();
     let pos_fbs = convert_all_to_fbs(&query_res);
     eprintln!("fbs convert | query_res.len(): {:?} | pos_fbs.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_fbs.len(), start.elapsed());
+    let t_convert = start.elapsed();
 
     let start = Instant::now();
-    let pos_fbs_aggr = do_pos_fbs_aggregation(&pos_fbs);
+    let pos_fbs_mapped = raw_to_fbs(&pos_fbs);
+    eprintln!("fbs aggregation | query_res.len(): {:?} | pos_fbs_aggr.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_fbs_mapped.len(), start.elapsed());
+
+    let start = Instant::now();
+    let pos_fbs_aggr = do_pos_fbs_aggregation(&pos_fbs_mapped);
     eprintln!("fbs aggregation | query_res.len(): {:?} | pos_fbs_aggr.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_fbs_aggr.len(), start.elapsed());
 
     let start = Instant::now();
-    let redis_prepare_sadd_cmd = prepare_redis_sadd_cmd(&pos_fbs, "fbs:par:1");
+    let redis_prepare_sadd_cmd = prepare_redis_sadd_cmd(&pos_fbs, &format!("fbs:par:{}", par_id) );
     eprintln!("fbs redis preparing | Time elapsed {:?}", start.elapsed());
+    let t_save_rds = start.elapsed();
 
     let start = Instant::now();
     redis_prepare_sadd_cmd.execute(&mut redis_conn);
     eprintln!("fbs redis saving | Time elapsed {:?}", start.elapsed());
+    println!("{}\t{}\t{}\t{}\t{}", "save_rds_fbs", "", t_convert.as_millis(), "", (t_convert + t_save_rds).as_millis());
 
     let start = Instant::now();
     let mut redis_smembers_cmd = redis::cmd("SMEMBERS");
-    redis_smembers_cmd.arg("fbs:par:1");
+    redis_smembers_cmd.arg( &format!("fbs:par:{}", par_id) );
     let fbs_from_redis = redis_smembers_cmd.query::<Vec<Vec<u8>>>(&mut redis_conn)?;
     eprintln!("fbs redis reading | fbs_from_redis.len(): {:?} | Time elapsed {:?}", fbs_from_redis.len(), start.elapsed());
+    let t_rds_read = start.elapsed();
 
     let start = Instant::now();
-    let redis_fbs_aggr = do_pos_fbs_aggregation(&fbs_from_redis);
-    eprintln!("fbs redis aggregation | fbs_from_redis.len(): {:?} | redis_fbs_aggr.len(): {:?} | Time elapsed {:?}", fbs_from_redis.len(), redis_fbs_aggr.len(), start.elapsed());
+    let pos_fbs_mapped_from_redis = raw_to_fbs(&pos_fbs);
+    eprintln!("fbs redis convert | query_res.len(): {:?} | pos_fbs_aggr.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_fbs_mapped_from_redis.len(), start.elapsed());
+    let t_rds_convert = start.elapsed();
 
     let start = Instant::now();
-    let fbs_from_redis = redis::cmd("GET").arg("huge").query::<Vec<Vec<u8>>>(&mut redis_conn)?;
-    eprintln!("huge fbs redis reading | fbs_from_redis.len(): {:?} | Time elapsed {:?}", fbs_from_redis.len(), start.elapsed());
+    let pos_fbs_aggr_from_redis = do_pos_fbs_aggregation(&pos_fbs_mapped_from_redis);
+    eprintln!("fbs redis aggregation | query_res.len(): {:?} | pos_fbs_aggr.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_fbs_aggr_from_redis.len(), start.elapsed());
+    let t_rds_aggr = start.elapsed();
+
+    println!("{}\t{}\t{}\t{}\t{}", "read_rds_fbs", t_rds_read.as_millis(), t_rds_convert.as_millis(), t_rds_aggr.as_millis(), (t_rds_read + t_rds_convert + t_rds_aggr).as_millis() );
 
     eprintln!("\n============================\n");
 
@@ -142,7 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("pos_mps_pos1_aggr | query_res.len(): {:?} | pos_mps_pos1_aggr.len(): {:?} | Time elapsed {:?}", &query_res.len(), pos_mps_pos1_aggr.len(), start.elapsed());
 
     let start = Instant::now();
-    let redis_prepare_sadd_cmd = prepare_redis_sadd_cmd(&pos_mps, "mps:par:1");
+    let redis_prepare_sadd_cmd = prepare_redis_sadd_cmd(&pos_mps, &format!("mps:par:{}", par_id) );
     eprintln!("mps redis preparing | Time elapsed {:?}", start.elapsed());
 
     let start = Instant::now();
@@ -151,17 +172,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let start = Instant::now();
     let mut redis_smembers_cmd = redis::cmd("SMEMBERS");
-    redis_smembers_cmd.arg("mps:par:1");
+    redis_smembers_cmd.arg( &format!("mps:par:{}", par_id) );
     let mps_from_redis = redis_smembers_cmd.query::<Vec<Vec<u8>>>(&mut redis_conn)?;
     eprintln!("mps redis reading | mps_from_redis.len(): {:?} | Time elapsed {:?}", mps_from_redis.len(), start.elapsed());
+    let t_mp_read = start.elapsed();
 
     let start = Instant::now();
     let pos_mps_pos2 = convert_all_from_mp(&mps_from_redis);
     eprintln!("mps convert 2 | pos_mps_pos2.len(): {:?} | Time elapsed {:?}", pos_mps_pos2.len(), start.elapsed());
+    let t_mp_convert = start.elapsed();
 
     let start = Instant::now();
     let redis_mps_aggr = do_post_aggregation(&pos_mps_pos2);
     eprintln!("mps redis aggregation | pos_mps_pos2.len(): {:?} | redis_mps_aggr.len(): {:?} | Time elapsed {:?}", pos_mps_pos2.len(), redis_mps_aggr.len(), start.elapsed());
+    let t_mp_aggr = start.elapsed();
+
+    println!("{}\t{}\t{}\t{}\t{}", "read_rds_mp", t_mp_read.as_millis(), t_mp_convert.as_millis(), t_mp_aggr.as_millis(), (t_mp_read + t_mp_convert + t_mp_aggr).as_millis() );
 
     eprintln!("\n============================\n");
 
@@ -175,10 +201,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     redis_smembers_cmd.arg("huge");
     let mps_from_redis = redis_smembers_cmd.query::<Vec<u8>>(&mut redis_conn)?;
     eprintln!("huge - mps redis reading | mps_from_redis.len(): {:?} | Time elapsed {:?}", mps_from_redis.len(), start.elapsed());
+    let t_mp_hg_read = start.elapsed();
 
     let start = Instant::now();
     let huge = rmp_serde::from_slice::<HashMap<i32, HashMap<i16, PosPostAggr>>>(&mps_from_redis).unwrap();
     eprintln!("huge - mps convert | huge.len(): {:?} | Time elapsed {:?}", huge.len(), start.elapsed());
+    let t_mp_hg_convert = start.elapsed();
+    
+    println!("{}\t{}\t{}\t{}\t{}", "read_rds_mp_hg", t_mp_hg_read.as_millis(), t_mp_hg_convert.as_millis(), "", (t_mp_hg_read + t_mp_hg_convert).as_millis() );
 
     let start = Instant::now();
     let mut sum_part =0;
@@ -197,7 +227,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // BAD PERFORMANCE -> ~ 40s   !!!!!!!!!!!!
     // let start = Instant::now();
     // let mut redis_fbs_iter : redis::Iter<Vec<u8>> = redis::cmd("SSCAN")
-    //     .arg("par:1")
+    //     .arg( &format!("par:{}", par_id) )
     //     .cursor_arg(1_000_000)
     //     .clone()
     //     .iter(&mut redis_conn)?;
@@ -243,34 +273,25 @@ fn prepare_redis_sadd_cmd(buf_items:&Vec<Vec<u8>>, key: &str) -> redis::Cmd {
     redis_prepare_sadd_cmd
 }
 
-fn do_pos_fbs_aggregation(pos_fbs: &Vec<Vec<u8>>)  -> HashMap<u32, HashMap<u16, PosFbsAggr>> {
-    let mut map = HashMap::new();
-
-    // let mut test = FxHashMap::default();
-    // pos_fbs.iter().for_each( |e| {
-    //     //let fbs = root_as_t_5(&e);
-    //     //let fbs = unsafe { root_as_t_5_unchecked(&e) };
-    //     match root_as_t_5(&e) { //read_t5_fbs(e.as_slice()) { 
-    //         Ok(fbs) => {
-    //             let acc = test.entry(fbs.dst()).or_insert_with(FxHashMap::default);
-    //             // acc.push(fbs);
-    //            let acc_grp = acc.entry(fbs.grp()).or_insert_with(|| Vec::new());
-    //            acc_grp.push(fbs);
-    //         },
-    //         _ => {}
-    //     }
-    // });
-//     map
-
+fn raw_to_fbs(pos_fbs: &Vec<Vec<u8>>)  -> Vec<t5> {
     pos_fbs.iter()
      .map(|e| unsafe { root_as_t_5_unchecked(&e) } )
 //     .filter(|e| e.is_ok() )
 //     .map(|e| e.unwrap() )
-     .map(|e| (e.dst(), e.grp(), e) )
-     .for_each(|(dst, grp, fbs)| {
-        let acc = map.entry(dst).or_insert_with(HashMap::new);
-        let acc_grp = acc.entry(grp).or_insert_with(|| PosFbsAggr::new());
-        acc_grp.pos_list.push(fbs);
+    .collect()
+}
+
+fn do_pos_fbs_aggregation<'a>(pos_fbs: &'a Vec<t5<'a>>)  -> HashMap<u32, HashMap<u16, PosFbsAggr<'a>>> {
+    let mut map = HashMap::new();
+
+    pos_fbs.iter()
+//     .map(|e| unsafe { root_as_t_5_unchecked(&e) } )
+//     .filter(|e| e.is_ok() )
+//     .map(|e| e.unwrap() )
+     .for_each(|fbs| {
+        let acc = map.entry(fbs.dst()).or_insert_with(HashMap::new);
+        let acc_grp = acc.entry(fbs.grp()).or_insert_with(|| PosFbsAggr::new());
+        acc_grp.pos_list.push(*fbs);
      });
     map
 }
