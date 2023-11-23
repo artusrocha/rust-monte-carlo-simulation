@@ -12,7 +12,11 @@ sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "postg
 chrono = "0.4.24"
 bigdecimal = {version = "0.3.0", features = ["serde"] }
 redis = "0.23.3"
-rustc-hash = "1.1.0"
 rmp-serde = "1.1.2"
-serde = "1.0.192"
 rand = "0.8.5"
+serde = { version = "1.0.192", features = ["serde_derive"] }
+#anyhow = "1"
+#lazy_static = "1.4"
+apache-avro = "0.16.0"
+derive_builder = "0.12.0"
+serde_bytes = "0.11.12"

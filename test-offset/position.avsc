@@ -1,0 +1,39 @@
+{
+  "name": "PosAvro",
+  "namespace": "pos_avro",
+  "type": "record",
+  "fields": [
+    {
+      "name": "dst",
+      "type": "int"
+    },
+    {
+      "name": "acc_id",
+      "type": "int"
+    },
+    {
+      "name": "ins_id",
+      "type": "int"
+    },
+    {
+      "name": "grp",
+      "type": "int"
+    },
+    {
+      "name": "grpv",
+      "type": "bytes"
+    },
+    {
+      "name": "qty",
+      "type": "float"
+    },
+    {
+      "name": "factor",
+      "type": "float"
+    },
+    {
+      "name": "ratio",
+      "type": "float"
+    }
+  ]
+}
