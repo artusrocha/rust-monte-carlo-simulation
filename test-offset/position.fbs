@@ -7,7 +7,7 @@ namespace pos;
 //    pos: [t5];
 //}
 
-table t5 {
+table Pos {
     dst: uint32;
     acc_id: uint32;
     ins_id: uint32;
@@ -18,5 +18,5 @@ table t5 {
     ratio: float;
 }
 
-root_type t5;
+root_type Pos;
 //root_type acc;

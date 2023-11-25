@@ -18,22 +18,22 @@ pub mod pos {
   extern crate flatbuffers;
   use self::flatbuffers::{EndianScalar, Follow};
 
-pub enum t5Offset {}
+pub enum PosOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
-pub struct t5<'a> {
+pub struct Pos<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
 
-impl<'a> flatbuffers::Follow<'a> for t5<'a> {
-  type Inner = t5<'a>;
+impl<'a> flatbuffers::Follow<'a> for Pos<'a> {
+  type Inner = Pos<'a>;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
     Self { _tab: flatbuffers::Table::new(buf, loc) }
   }
 }
 
-impl<'a> t5<'a> {
+impl<'a> Pos<'a> {
   pub const VT_DST: flatbuffers::VOffsetT = 4;
   pub const VT_ACC_ID: flatbuffers::VOffsetT = 6;
   pub const VT_INS_ID: flatbuffers::VOffsetT = 8;
@@ -45,14 +45,14 @@ impl<'a> t5<'a> {
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    t5 { _tab: table }
+    Pos { _tab: table }
   }
   #[allow(unused_mut)]
   pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
     _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-    args: &'args t5Args
-  ) -> flatbuffers::WIPOffset<t5<'bldr>> {
-    let mut builder = t5Builder::new(_fbb);
+    args: &'args PosArgs
+  ) -> flatbuffers::WIPOffset<Pos<'bldr>> {
+    let mut builder = PosBuilder::new(_fbb);
     builder.add_ratio(args.ratio);
     builder.add_factor(args.factor);
     builder.add_qty(args.qty);
@@ -70,60 +70,60 @@ impl<'a> t5<'a> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u32>(t5::VT_DST, Some(0)).unwrap()}
+    unsafe { self._tab.get::<u32>(Pos::VT_DST, Some(0)).unwrap()}
   }
   #[inline]
   pub fn acc_id(&self) -> u32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u32>(t5::VT_ACC_ID, Some(0)).unwrap()}
+    unsafe { self._tab.get::<u32>(Pos::VT_ACC_ID, Some(0)).unwrap()}
   }
   #[inline]
   pub fn ins_id(&self) -> u32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u32>(t5::VT_INS_ID, Some(0)).unwrap()}
+    unsafe { self._tab.get::<u32>(Pos::VT_INS_ID, Some(0)).unwrap()}
   }
   #[inline]
   pub fn grp(&self) -> u16 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u16>(t5::VT_GRP, Some(0)).unwrap()}
+    unsafe { self._tab.get::<u16>(Pos::VT_GRP, Some(0)).unwrap()}
   }
   #[inline]
   pub fn grpv(&self) -> u8 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<u8>(t5::VT_GRPV, Some(0)).unwrap()}
+    unsafe { self._tab.get::<u8>(Pos::VT_GRPV, Some(0)).unwrap()}
   }
   #[inline]
   pub fn qty(&self) -> f32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<f32>(t5::VT_QTY, Some(0.0)).unwrap()}
+    unsafe { self._tab.get::<f32>(Pos::VT_QTY, Some(0.0)).unwrap()}
   }
   #[inline]
   pub fn factor(&self) -> f32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<f32>(t5::VT_FACTOR, Some(0.0)).unwrap()}
+    unsafe { self._tab.get::<f32>(Pos::VT_FACTOR, Some(0.0)).unwrap()}
   }
   #[inline]
   pub fn ratio(&self) -> f32 {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<f32>(t5::VT_RATIO, Some(0.0)).unwrap()}
+    unsafe { self._tab.get::<f32>(Pos::VT_RATIO, Some(0.0)).unwrap()}
   }
 }
 
-impl flatbuffers::Verifiable for t5<'_> {
+impl flatbuffers::Verifiable for Pos<'_> {
   #[inline]
   fn run_verifier(
     v: &mut flatbuffers::Verifier, pos: usize
@@ -142,7 +142,7 @@ impl flatbuffers::Verifiable for t5<'_> {
     Ok(())
   }
 }
-pub struct t5Args {
+pub struct PosArgs {
     pub dst: u32,
     pub acc_id: u32,
     pub ins_id: u32,
@@ -152,10 +152,10 @@ pub struct t5Args {
     pub factor: f32,
     pub ratio: f32,
 }
-impl<'a> Default for t5Args {
+impl<'a> Default for PosArgs {
   #[inline]
   fn default() -> Self {
-    t5Args {
+    PosArgs {
       dst: 0,
       acc_id: 0,
       ins_id: 0,
@@ -168,61 +168,61 @@ impl<'a> Default for t5Args {
   }
 }
 
-pub struct t5Builder<'a: 'b, 'b> {
+pub struct PosBuilder<'a: 'b, 'b> {
   fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b> t5Builder<'a, 'b> {
+impl<'a: 'b, 'b> PosBuilder<'a, 'b> {
   #[inline]
   pub fn add_dst(&mut self, dst: u32) {
-    self.fbb_.push_slot::<u32>(t5::VT_DST, dst, 0);
+    self.fbb_.push_slot::<u32>(Pos::VT_DST, dst, 0);
   }
   #[inline]
   pub fn add_acc_id(&mut self, acc_id: u32) {
-    self.fbb_.push_slot::<u32>(t5::VT_ACC_ID, acc_id, 0);
+    self.fbb_.push_slot::<u32>(Pos::VT_ACC_ID, acc_id, 0);
   }
   #[inline]
   pub fn add_ins_id(&mut self, ins_id: u32) {
-    self.fbb_.push_slot::<u32>(t5::VT_INS_ID, ins_id, 0);
+    self.fbb_.push_slot::<u32>(Pos::VT_INS_ID, ins_id, 0);
   }
   #[inline]
   pub fn add_grp(&mut self, grp: u16) {
-    self.fbb_.push_slot::<u16>(t5::VT_GRP, grp, 0);
+    self.fbb_.push_slot::<u16>(Pos::VT_GRP, grp, 0);
   }
   #[inline]
   pub fn add_grpv(&mut self, grpv: u8) {
-    self.fbb_.push_slot::<u8>(t5::VT_GRPV, grpv, 0);
+    self.fbb_.push_slot::<u8>(Pos::VT_GRPV, grpv, 0);
   }
   #[inline]
   pub fn add_qty(&mut self, qty: f32) {
-    self.fbb_.push_slot::<f32>(t5::VT_QTY, qty, 0.0);
+    self.fbb_.push_slot::<f32>(Pos::VT_QTY, qty, 0.0);
   }
   #[inline]
   pub fn add_factor(&mut self, factor: f32) {
-    self.fbb_.push_slot::<f32>(t5::VT_FACTOR, factor, 0.0);
+    self.fbb_.push_slot::<f32>(Pos::VT_FACTOR, factor, 0.0);
   }
   #[inline]
   pub fn add_ratio(&mut self, ratio: f32) {
-    self.fbb_.push_slot::<f32>(t5::VT_RATIO, ratio, 0.0);
+    self.fbb_.push_slot::<f32>(Pos::VT_RATIO, ratio, 0.0);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> t5Builder<'a, 'b> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> PosBuilder<'a, 'b> {
     let start = _fbb.start_table();
-    t5Builder {
+    PosBuilder {
       fbb_: _fbb,
       start_: start,
     }
   }
   #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<t5<'a>> {
+  pub fn finish(self) -> flatbuffers::WIPOffset<Pos<'a>> {
     let o = self.fbb_.end_table(self.start_);
     flatbuffers::WIPOffset::new(o.value())
   }
 }
 
-impl core::fmt::Debug for t5<'_> {
+impl core::fmt::Debug for Pos<'_> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("t5");
+    let mut ds = f.debug_struct("Pos");
       ds.field("dst", &self.dst());
       ds.field("acc_id", &self.acc_id());
       ds.field("ins_id", &self.ins_id());
@@ -235,74 +235,74 @@ impl core::fmt::Debug for t5<'_> {
   }
 }
 #[inline]
-/// Verifies that a buffer of bytes contains a `t5`
+/// Verifies that a buffer of bytes contains a `Pos`
 /// and returns it.
 /// Note that verification is still experimental and may not
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
-/// `root_as_t_5_unchecked`.
-pub fn root_as_t_5(buf: &[u8]) -> Result<t5, flatbuffers::InvalidFlatbuffer> {
-  flatbuffers::root::<t5>(buf)
+/// `root_as_pos_unchecked`.
+pub fn root_as_pos(buf: &[u8]) -> Result<Pos, flatbuffers::InvalidFlatbuffer> {
+  flatbuffers::root::<Pos>(buf)
 }
 #[inline]
 /// Verifies that a buffer of bytes contains a size prefixed
-/// `t5` and returns it.
+/// `Pos` and returns it.
 /// Note that verification is still experimental and may not
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
-/// `size_prefixed_root_as_t_5_unchecked`.
-pub fn size_prefixed_root_as_t_5(buf: &[u8]) -> Result<t5, flatbuffers::InvalidFlatbuffer> {
-  flatbuffers::size_prefixed_root::<t5>(buf)
+/// `size_prefixed_root_as_pos_unchecked`.
+pub fn size_prefixed_root_as_pos(buf: &[u8]) -> Result<Pos, flatbuffers::InvalidFlatbuffer> {
+  flatbuffers::size_prefixed_root::<Pos>(buf)
 }
 #[inline]
 /// Verifies, with the given options, that a buffer of bytes
-/// contains a `t5` and returns it.
+/// contains a `Pos` and returns it.
 /// Note that verification is still experimental and may not
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
-/// `root_as_t_5_unchecked`.
-pub fn root_as_t_5_with_opts<'b, 'o>(
+/// `root_as_pos_unchecked`.
+pub fn root_as_pos_with_opts<'b, 'o>(
   opts: &'o flatbuffers::VerifierOptions,
   buf: &'b [u8],
-) -> Result<t5<'b>, flatbuffers::InvalidFlatbuffer> {
-  flatbuffers::root_with_opts::<t5<'b>>(opts, buf)
+) -> Result<Pos<'b>, flatbuffers::InvalidFlatbuffer> {
+  flatbuffers::root_with_opts::<Pos<'b>>(opts, buf)
 }
 #[inline]
 /// Verifies, with the given verifier options, that a buffer of
-/// bytes contains a size prefixed `t5` and returns
+/// bytes contains a size prefixed `Pos` and returns
 /// it. Note that verification is still experimental and may not
 /// catch every error, or be maximally performant. For the
 /// previous, unchecked, behavior use
-/// `root_as_t_5_unchecked`.
-pub fn size_prefixed_root_as_t_5_with_opts<'b, 'o>(
+/// `root_as_pos_unchecked`.
+pub fn size_prefixed_root_as_pos_with_opts<'b, 'o>(
   opts: &'o flatbuffers::VerifierOptions,
   buf: &'b [u8],
-) -> Result<t5<'b>, flatbuffers::InvalidFlatbuffer> {
-  flatbuffers::size_prefixed_root_with_opts::<t5<'b>>(opts, buf)
+) -> Result<Pos<'b>, flatbuffers::InvalidFlatbuffer> {
+  flatbuffers::size_prefixed_root_with_opts::<Pos<'b>>(opts, buf)
 }
 #[inline]
-/// Assumes, without verification, that a buffer of bytes contains a t5 and returns it.
+/// Assumes, without verification, that a buffer of bytes contains a Pos and returns it.
 /// # Safety
-/// Callers must trust the given bytes do indeed contain a valid `t5`.
-pub unsafe fn root_as_t_5_unchecked(buf: &[u8]) -> t5 {
-  flatbuffers::root_unchecked::<t5>(buf)
+/// Callers must trust the given bytes do indeed contain a valid `Pos`.
+pub unsafe fn root_as_pos_unchecked(buf: &[u8]) -> Pos {
+  flatbuffers::root_unchecked::<Pos>(buf)
 }
 #[inline]
-/// Assumes, without verification, that a buffer of bytes contains a size prefixed t5 and returns it.
+/// Assumes, without verification, that a buffer of bytes contains a size prefixed Pos and returns it.
 /// # Safety
-/// Callers must trust the given bytes do indeed contain a valid size prefixed `t5`.
-pub unsafe fn size_prefixed_root_as_t_5_unchecked(buf: &[u8]) -> t5 {
-  flatbuffers::size_prefixed_root_unchecked::<t5>(buf)
+/// Callers must trust the given bytes do indeed contain a valid size prefixed `Pos`.
+pub unsafe fn size_prefixed_root_as_pos_unchecked(buf: &[u8]) -> Pos {
+  flatbuffers::size_prefixed_root_unchecked::<Pos>(buf)
 }
 #[inline]
-pub fn finish_t_5_buffer<'a, 'b>(
+pub fn finish_pos_buffer<'a, 'b>(
     fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>,
-    root: flatbuffers::WIPOffset<t5<'a>>) {
+    root: flatbuffers::WIPOffset<Pos<'a>>) {
   fbb.finish(root, None);
 }
 
 #[inline]
-pub fn finish_size_prefixed_t_5_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<t5<'a>>) {
+pub fn finish_size_prefixed_pos_buffer<'a, 'b>(fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>, root: flatbuffers::WIPOffset<Pos<'a>>) {
   fbb.finish_size_prefixed(root, None);
 }
 }  // pub mod pos
