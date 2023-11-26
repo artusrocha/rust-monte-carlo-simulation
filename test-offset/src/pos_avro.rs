@@ -1,5 +1,6 @@
-
-#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize, derive_builder::Builder)]
+#[derive(
+    Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize, derive_builder::Builder,
+)]
 #[builder(setter(into))]
 pub struct PosAvro {
     pub dst: i32,
