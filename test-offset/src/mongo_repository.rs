@@ -1,17 +1,26 @@
-//use serde::{Deserialize, Serialize};
-
 use mongodb::{Client, Collection, Database};
-
 use mongodb::bson::doc;
-
+use serde::{Serialize, Deserialize};
 use std::env;
 use std::time::{Duration, Instant};
-
 use crate::pg_repository::Pos;
 
 pub struct Repo {
     db: Database,
-    collection: Collection<Pos>,
+    collection: Collection<MongoDocWrap<PosId, Pos>>,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct MongoDocWrap<ID, T> {
+    _id: ID,
+    val: T,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PosId {
+    ins_id: i32,
+    acc_id: i32,
 }
 
 impl Repo {
@@ -22,15 +31,21 @@ impl Repo {
         let db = Client::with_uri_str(&mongo_url)
             .await?
             .database(&mongodb_db);
-        let collection: Collection<Pos> = db.collection(&mongodb_collection);
-        collection.delete_many(doc![], None).await?;
+        let collection: Collection<MongoDocWrap<PosId, Pos>> = db.collection(&mongodb_collection);
+        collection.drop(None).await?;
         let repo = Repo { db, collection };
         Ok(repo)
     }
 
     pub async fn save_all(&self, items: &Vec<Pos>) -> Result<Duration, Box<dyn std::error::Error>> {
         let timer = Instant::now();
-        self.collection.insert_many(items, None).await?;
+        let wraps: Vec<MongoDocWrap<PosId, Pos>> = items.iter()
+            .map(|item| MongoDocWrap { 
+                _id: PosId{ ins_id: item.ins_id, acc_id: item.acc_id}, 
+                val: item.clone() 
+            })
+            .collect();
+        self.collection.insert_many(wraps, None).await?;
         eprintln!("mongo saving | time: {:?}", timer.elapsed());
         Ok(timer.elapsed())
     }
@@ -41,7 +56,7 @@ impl Repo {
         let mut cursor = self.collection.find(filters, None).await?;
         let mut results = vec![];
         while cursor.advance().await? {
-            results.push(cursor.deserialize_current()?);
+            results.push(cursor.deserialize_current()?.val);
         }
 
         eprintln!(
