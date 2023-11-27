@@ -26,9 +26,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     eprintln!("par_id {}", par_id);
 
-    let pg_repo = pg_repository::Repo::init().await?;
+    let pg_repo = pg_repository::Repo::new().await?;
 
-    let mut redis_repo = redis_repository::Repo::init()?;
+    let mut redis_repo = redis_repository::Repo::new()?;
 
     let mongo_repo = mongo_repository::Repo::new().await?;
 
@@ -59,13 +59,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let t_mongo_save = mongo_repo.save_all(&query_res).await?;
+    println!("{}\t{}\t{}\t{}","mongo_save",t_mongo_save.as_millis(),"","");
+
     let (t_mongo_read, mongo_items) = mongo_repo.find_all().await?;
-    eprintln!(
-        "t_mongo_save: {:?}, t_mongo_read: {:?}, len(): {:?}",
-        t_mongo_save,
-        t_mongo_read,
-        mongo_items.len()
-    );
+    eprintln!("mongo_items.len(): {:?}", mongo_items.len());
+    println!("{}\t{}\t{}\t{}","mongo_read",t_mongo_read.as_millis(),"","");
 
     let (t_convert_rds_fbs, pos_fbs_buf) = fbs::convert_all_to_buf(&query_res);
 

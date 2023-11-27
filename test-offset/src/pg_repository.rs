@@ -32,7 +32,7 @@ pub struct Repo {
 }
 
 impl Repo {
-    pub async fn init() -> Result<Repo, Box<dyn std::error::Error>> {
+    pub async fn new() -> Result<Repo, Box<dyn std::error::Error>> {
         let repo = Repo {
             db: Self::get_db_conn_pool().await?,
         };

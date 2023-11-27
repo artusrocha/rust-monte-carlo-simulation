@@ -32,7 +32,7 @@ impl Repo {
             .await?
             .database(&mongodb_db);
         let collection: Collection<MongoDocWrap<PosId, Pos>> = db.collection(&mongodb_collection);
-        collection.drop(None).await?;
+        //collection.drop(None).await?;
         let repo = Repo { db, collection };
         Ok(repo)
     }

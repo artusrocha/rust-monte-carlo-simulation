@@ -7,7 +7,7 @@ pub(crate) struct Repo {
 }
 
 impl Repo {
-    pub fn init() -> Result<Repo, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Repo, Box<dyn std::error::Error>> {
         let redis_conn = Self::get_redis_conn()?;
         let repo = Repo { redis_conn };
         Ok(repo)

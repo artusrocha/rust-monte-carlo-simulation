@@ -1,0 +1,39 @@
+100k
+type	t_query	t_convert	t_aggr	t_total
+query_aggr	636		
+query_full	370		25
+mongo_save	974		
+mongo_read	249		
+save_rds_fbs	96	0	
+read_rds_fbs	115	0	19
+read_rds_mp	102	69	
+read_rds_mp	156	104	82
+save_rds_avro	123	373	
+read_rds_avro	119	132	
+
+500k
+type	t_query	t_convert	t_aggr	t_total
+query_aggr	643		
+query_full	1205		119
+mongo_save	4933		
+mongo_read	1256		
+save_rds_fbs	486	0	
+read_rds_fbs	575	2	93
+read_rds_mp	567	301	
+read_rds_mp	706	294	241
+save_rds_avro	494	1211	
+read_rds_avro	368	541	
+
+2mi
+type	t_query	t_convert	t_aggr	t_total
+query_aggr	1631		
+query_full	3783		423
+mongo_save	25032		
+mongo_read	5174		
+save_rds_fbs	2064	0	
+read_rds_fbs	2243	9	585
+read_rds_mp	5252	1188	
+read_rds_mp	2064	1214	2204
+save_rds_avro	3547	4992	
+read_rds_avro	1494	2156	
+
