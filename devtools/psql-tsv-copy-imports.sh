@@ -2,17 +2,17 @@
 
 alias psql='time docker exec -it pg psql -U montecarlo'
 
-echo "### Importing /sample/data/item.tsv [$(wc -l sample/data/item.tsv|cut -d' ' -f1) lines]"
-psql -c "COPY item FROM '/sample/data/item.tsv';"
+echo "### Importing /sample/product.tsv [$(wc -l sample/data/product.tsv|cut -d' ' -f1) lines]"
+psql -c "COPY product_props FROM '/sample/product.tsv';"
 echo ""
 
-echo "### Importing /sample/data/item_batch.tsv [$(wc -l sample/data/item_batch.tsv|cut -d' ' -f1) lines]"
-psql -c "COPY item_batch FROM '/sample/data/item_batch.tsv' WITH NULL as 'null';"
+echo "### Importing /sample/product_batch.tsv [$(wc -l sample/data/product_batch.tsv|cut -d' ' -f1) lines]"
+psql -c "COPY product_batch FROM '/sample/product_batch.tsv' WITH NULL as 'null';"
 echo ""
 
-echo "### Importing /sample/data/item_mov_hist.tsv to item_mov_hist [$(wc -l sample/data/item_mov_hist.tsv|cut -d' ' -f1) lines]"
-psql -c "COPY item_mov_hist FROM '/sample/data/item_mov_hist.tsv';"
+echo "### Importing /sample/product_mov_hist.tsv to product_mov_hist [$(wc -l sample/data/product_mov_hist.tsv|cut -d' ' -f1) lines]"
+psql -c "COPY product_mov_hist FROM '/sample/product_mov_hist.tsv';"
 echo ""
 
-echo "### Importing /sample/data/item_mov_hist.tsv to item_mov_hist_no_part [$(wc -l sample/data/item_mov_hist.tsv|cut -d' ' -f1) lines]"
-psql -c "COPY item_mov_hist_no_part FROM '/sample/data/item_mov_hist.tsv';"
+echo "### Importing /sample/product_mov_hist.tsv to product_mov_hist_no_part [$(wc -l sample/data/product_mov_hist.tsv|cut -d' ' -f1) lines]"
+psql -c "COPY product_mov_hist_no_part FROM '/sample/product_mov_hist.tsv';"

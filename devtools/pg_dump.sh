@@ -1,6 +1,6 @@
 #!/bin/sh
 
-DUMP_FILE="$PWD/smple/montecarlo_db.sql.gz"
+DUMP_FILE="$PWD/sample/montecarlo_db.sql.gz"
 
 echo "### Creating Test Database Backup"
 echo "### at $DUMP_FILE"

@@ -1,10 +1,11 @@
 const fs = require("fs");
+const { randomUUID } = require("node:crypto");
 const path = require('node:path'); 
 
 let i_batch_id = 1;
 const default_time_limit = 7;
 
-const item_limit = 50000;
+const QTY_OF_PRODUCTS_LIMIT = 50000;
 if ( ! process.argv[2]) {
     console.log('missing date parameter. e.g:');
     const dir=path.posix.basename(path.dirname(process.argv[1]))
@@ -16,9 +17,9 @@ console.log(`parsing date: ${process.argv[2]}`);
 const date = new Date(process.argv[2])
 console.log(`using date: ${date.toISOString()}`);
 
-const item_writer = getWriter("sample/data/item.tsv")
-const item_mov_hist_writer = getWriter("sample/data/item_mov_hist.tsv")
-const item_batch_writer = getWriter("sample/data/item_batch.tsv")
+const product_writer = getWriter("sample/product.tsv")
+const product_mov_hist_writer = getWriter("sample/product_mov_hist.tsv")
+const product_batch_writer = getWriter("sample/product_batch.tsv")
 
 function getWriter (filename) {
     const writer = fs.createWriteStream(filename);
@@ -42,26 +43,38 @@ function getRandomIntBetween(min, max) {
     return min+Math.floor(Math.random() * (max-min))
 }
 
-function genItem(item_id) {
+function genProduct(count) {
 
-    if (item_id > item_limit)
+    if (count > QTY_OF_PRODUCTS_LIMIT)
         return;
 
-    item_writer.write( [item_id, default_time_limit, true, date.toISOString(), date.toISOString()].join("\t").concat("\n") )
+    let product_id = randomUUID();
+    product_writer.write(
+        [
+            product_id,         //id UUID
+            90,                 // simulation_forecast_days SMALLINT CHECK(default_simulation_forecast_days >= 0),
+            0.02,               // scenario_random_range_factor DECIMAL(3,2),
+            1825,               // maximum_historic_days SMALLINT CHECK(default_maximum_historic >= 0),
+            15*30,              // maximum_quantity INTEGER CHECK(maximum_quantity >= 0) NOT NULL,
+            0,                  // minimum_quantity INTEGER CHECK(minimum_quantity >= 0) DEFAULT 0 NOT NULL,
+            true,               // active BOOLEAN NOT NULL DEFAULT TRUE,
+            date.toISOString(), // created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            date.toISOString(), // updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        ].join("\t").concat("\n")
+    )
 
     let hist_date = new Date(2017, 11, 9)
     while ( hist_date.isBefore(date) ) {
         hist_date.setDate(hist_date.getDate() + 1)
-        item_mov_hist_writer.write( 
+        product_mov_hist_writer.write( 
             [
-                item_id,
-                getRandomIntBetween(20, 100),
-                getRandomIntBetween(20, 100),
-                hist_date.toISOString(),
-                hist_date.getWeekNumber(),
-                hist_date.toISOString()
-            ]
-            .join("\t").concat("\n")
+                product_id,                   // product_id UUID REFERENCES product_props (id),
+                getRandomIntBetween(20, 100), // entry_qty INTEGER NOT NULL DEFAULT 0,
+                getRandomIntBetween(20, 100), // withdrawal_qty INTEGER NOT NULL DEFAULT 0,
+                hist_date.toISOString(),      // mov_date DATE NOT NULL DEFAULT NOW(),
+                hist_date.getWeekNumber(),    // week_of_year SMALLINT CHECK(week_of_year >= 1 AND week_of_year <= 53) ,
+                hist_date.toISOString(),      // created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            ].join("\t").concat("\n")
         )
     }
 
@@ -69,25 +82,25 @@ function genItem(item_id) {
         const entry_date = new Date()
         entry_date.setDate(date.getDate() - day)
         const deadline_date = new Date()
-        deadline_date.setDate(entry_date.getDate() + default_time_limit)
+        deadline_date.setDate(date.getDate() + default_time_limit)
         const entry_date_iso = entry_date.toISOString()
         const deadline_date_iso = deadline_date.toISOString()
         const quantity = getRandomIntBetween(10, 30)
-        item_batch_writer.write(
+        product_batch_writer.write(
             [
-                i_batch_id++,
-                item_id,
-                entry_date_iso,
-                deadline_date_iso,
-                deadline_date > date ? deadline_date : 'null',
-                entry_date_iso,
-                entry_date_iso,
-                quantity
+                i_batch_id++,      // id SERIAL,
+                product_id,        // product_id UUID REFERENCES product_props (id),
+                entry_date_iso,    // entry_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                deadline_date_iso, // deadline_date TIMESTAMPTZ NOT NULL,
+                deadline_date > date ? deadline_date_iso : 'null', // finished_date TIMESTAMPTZ,
+                quantity,          // quantity INTEGER NOT NULL CHECK (quantity >= 0) DEFAULT 0;
+                entry_date_iso,    // created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                entry_date_iso,    // updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             ]
             .join("\t").concat("\n"))
     }
 
-    setImmediate(() => genItem(++item_id));
+    setImmediate(() => genProduct(++count));
 }
 
-genItem(1)
+genProduct(1)

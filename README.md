@@ -118,11 +118,12 @@ The results expected are for each item day by day inform with the probability ex
   - Authentication [?]
   - Authorization [?]
 
-#### Systemic interface for products state update
+#### Systemic interface for products and movements state update
 
 - Event oriented
-  - MTLS implementation
+  - MQTT implementation
   - Kafka implementation
+  - Brokerless implementation
 - Pull oriented
 
 #### Scenarios generation job
