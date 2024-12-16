@@ -5,7 +5,7 @@ const path = require('node:path');
 let i_batch_id = 1;
 const default_time_limit = 7;
 
-const QTY_OF_PRODUCTS_LIMIT = 50000;
+const QTY_OF_PRODUCTS_LIMIT = 50;
 if ( ! process.argv[2]) {
     console.log('missing date parameter. e.g:');
     const dir=path.posix.basename(path.dirname(process.argv[1]))
