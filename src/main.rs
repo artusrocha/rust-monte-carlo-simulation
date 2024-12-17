@@ -1,7 +1,6 @@
-use sqlx::{
-    database::HasArguments, postgres::PgPoolOptions, query::QueryAs, types::BigDecimal, FromRow,
-    Pool, Postgres,
-};
+mod data;
+
+use sqlx::{ postgres::PgPoolOptions, query::QueryAs, types::BigDecimal, FromRow, Pool, Postgres };
 
 use std::{
     collections::{HashMap, LinkedList},
@@ -289,7 +288,7 @@ fn get_all_week_between(initial_value: u32, final_value: u32) -> Vec<i16> {
     range
 }
 
-fn get_query<'a>() -> QueryAs<'a, Postgres, Hist, <Postgres as HasArguments<'a>>::Arguments> {
+fn get_query<'a>() -> QueryAs<'a, Postgres, Hist, sqlx::postgres::PgArguments> {
     sqlx::query_as::<_, Hist>(
         "
         SELECT 

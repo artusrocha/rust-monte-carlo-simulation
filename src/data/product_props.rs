@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, query::QueryAs, types::BigDecimal, FromRow, Pool, Postgres};
 
 pub struct ProductProps { 
-    id: UUID,
-    Option<simulation_forecast_days>: u16,
-    Option<scenario_random_range_factor>: f32,
-    Option<maximum_historic_days>: u16,
-    maximum_quantity: u32,
-    minimum_quantity: u32,
-    active: bool,
+    pub id: UUID,
+    pub simulation_forecast_days: Option<u16>,
+    pub scenario_random_range_factor: Option<f32>,
+    pub maximum_historic_days: Option<u16>,
+    pub maximum_quantity: u32,
+    pub minimum_quantity: u32,
+    pub active: bool,
 //    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 //    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 }

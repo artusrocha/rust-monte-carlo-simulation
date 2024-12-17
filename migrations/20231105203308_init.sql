@@ -70,11 +70,11 @@ CREATE TABLE IF NOT EXISTS product_mov_hist_no_part (
 
 CREATE TABLE IF NOT EXISTS product_mov_hist (
     product_id UUID REFERENCES product_props (id),
-    entry_qty NUMERIC NOT NULL DEFAULT 0,
-    withdrawal_qty NUMERIC NOT NULL DEFAULT 0,
+    entry_qty INTEGER NOT NULL DEFAULT 0,
+    withdrawal_qty INTEGER NOT NULL DEFAULT 0,
     mov_date DATE NOT NULL DEFAULT NOW(),
     -- A generated column cannot be part of a partition key (https://www.postgresql.org/docs/current/ddl-generated-columns.html)
-    week_of_year SMALLINT CHECK(week_of_year >= 1 AND week_of_year <= 53) ,
+    week_of_year SMALLINT NOT NULL CHECK(week_of_year >= 1 AND week_of_year <= 53) ,
     day_of_week SMALLINT CHECK(day_of_week >= 0 AND day_of_week <= 6) GENERATED ALWAYS AS (date_part('dow', mov_date)) STORED,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (product_id, mov_date, week_of_year)
