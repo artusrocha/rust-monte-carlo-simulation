@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 use sqlx::{types::{BigDecimal, Uuid}, FromRow, Pool, Postgres};
 
 #[derive(Debug, FromRow, Clone)]
-pub struct ProductProps { 
+pub struct ProductSimulationSummary { 
     pub id: Uuid,
     pub simulation_forecast_days: Option<i16>,
     pub scenario_random_range_factor: Option<BigDecimal>,
@@ -14,24 +14,24 @@ pub struct ProductProps {
 //    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 }
 
-pub struct ProductPropsRepository {
+pub struct ProductSimulationSummaryRepository {
     db: Pool<Postgres>
 }
 
-impl ProductPropsRepository {
+impl ProductSimulationSummaryRepository {
 
-    pub fn new(db: Pool<Postgres>) -> ProductPropsRepository {
-        ProductPropsRepository {
+    pub fn new(db: Pool<Postgres>) -> ProductSimulationSummaryRepository {
+        ProductSimulationSummaryRepository {
             db: db
         }
     }
     
     pub async fn find_all(
         &self,
-    ) -> Result<(Duration, Vec<ProductProps>), Box<dyn std::error::Error>> {
+    ) -> Result<(Duration, Vec<ProductSimulationSummary>), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
-        let query = sqlx::query_as::<_, ProductProps>("
+        let query = sqlx::query_as::<_, ProductSimulationSummary>("
             SELECT 
                 id,
                 simulation_forecast_days,
@@ -40,7 +40,7 @@ impl ProductPropsRepository {
                 maximum_quantity,
                 minimum_quantity,
                 active
-            FROM product_props;
+            FROM product_simulation_summary;
         ");
 
         let query_res = query.fetch_all(&self.db).await?;
@@ -51,10 +51,10 @@ impl ProductPropsRepository {
     pub async fn find_all_by_status(
         &self,
         is_active: bool,
-    ) -> Result<(Duration, Vec<ProductProps>), Box<dyn std::error::Error>> {
+    ) -> Result<(Duration, Vec<ProductSimulationSummary>), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
-        let query = sqlx::query_as::<_, ProductProps>("
+        let query = sqlx::query_as::<_, ProductSimulationSummary>("
             SELECT 
                 id,
                 simulation_forecast_days,
@@ -63,7 +63,7 @@ impl ProductPropsRepository {
                 maximum_quantity,
                 minimum_quantity,
                 active
-            FROM product_props
+            FROM product_simulation_summary
             WHERE active = $1;
         ");
 
@@ -111,13 +111,13 @@ mod tests {
         //eprintln!("Query took: {:?}, result: {:?}", elapsed, products);
     }
 
-    async fn get_db_repo() -> ProductPropsRepository {
+    async fn get_db_repo() -> ProductSimulationSummaryRepository {
         let database_url = env::var("DATABASE_URL").unwrap();
         eprintln!("DATABASE_URL: {:?}", database_url);
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
             .await.unwrap();
-        ProductPropsRepository::new(pool)
+        ProductSimulationSummaryRepository::new(pool)
     }
 }

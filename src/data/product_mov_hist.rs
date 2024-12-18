@@ -1,6 +1,5 @@
-use std::{time::{Duration, Instant}, collections::HashMap};
-use sqlx::{postgres::PgPoolOptions, query::QueryAs, types::BigDecimal, FromRow, Pool, Postgres, types::Uuid};
-//use uuid::{uuid, Uuid};
+use std::time::{Duration, Instant};
+use sqlx::{types::{BigDecimal, Uuid}, FromRow, Pool, Postgres};
 
 
 #[derive(Debug, FromRow, Clone)]
@@ -63,31 +62,47 @@ impl ProductMovHistRepository {
 mod tests {
     use std::env;
 
+    use sqlx::postgres::PgPoolOptions;
+
     use super::*;
 
+    const DAYS_IN_THE_PERIOD : usize = 35;
+    const FIRST_WEEK : i16 = 1;
+    const LAST_WEEK : i16 = 5;
 
     #[tokio::test]
     async fn aggregate_by_product_id_and_week_of_year_and_day_of_week() {
-        let days_in_the_period = 35;
-        let first_week= 1;
-        let last_week = 5;
-        let db = get_db_conn_pool().await.unwrap();
-        let repo = ProductMovHistRepository::new(db);
+        let repo = get_db_repo().await;
         let result = repo.aggregate_by_product_id_and_week_of_year_and_day_of_week(
             Uuid::parse_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
-            first_week,
-            last_week,
+            FIRST_WEEK,
+            LAST_WEEK,
         ).await;
-        assert_eq!(result.unwrap().1.len(), days_in_the_period);
+        let (elapsed, hist) = result.unwrap();
+        assert_eq!(hist.len(), DAYS_IN_THE_PERIOD);
+        eprintln!("Query took: {:?}, result: {:?}", elapsed, hist);
     }
 
-    async fn get_db_conn_pool() -> Result<Pool<Postgres>, Box<dyn std::error::Error>> {
-        let database_url = env::var("DATABASE_URL")?;
-    eprintln!("{:?}", database_url);
+    #[tokio::test]
+    async fn aggregate_by_product_id_and_week_of_year_and_day_of_week_no_results() {
+        let repo = get_db_repo().await;
+        let result = repo.aggregate_by_product_id_and_week_of_year_and_day_of_week(
+            Uuid::parse_str("d0bd335e-fc46-408d-90fb-000000000000").unwrap(),
+            FIRST_WEEK,
+            LAST_WEEK,
+        ).await;
+        let (elapsed, hist) = result.unwrap();
+        assert_eq!(hist.len(), 0);
+        eprintln!("Query took: {:?}, result: {:?}", elapsed, hist);
+    }
+
+    async fn get_db_repo() -> ProductMovHistRepository {
+        let database_url = env::var("DATABASE_URL").unwrap();
+        eprintln!("DATABASE_URL: {:?}", database_url);
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
-            .await?;
-        Ok(pool)
+            .await.unwrap();
+        ProductMovHistRepository::new(pool)
     }
 }
