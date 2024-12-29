@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS product_props (
 
 CREATE TABLE IF NOT EXISTS product_simulation_summary (
     id SERIAL,
-    product_id UUID REFERENCES product_props (id),
+    product_id UUID REFERENCES product_props (id) NOT NULL,
     probability_losses_by_missing DECIMAL(3,3) NOT NULL,
     probability_losses_by_nospace DECIMAL(3,3) NOT NULL,
     probability_losses_by_expirat DECIMAL(3,3) NOT NULL,
@@ -33,19 +33,18 @@ CREATE TABLE IF NOT EXISTS product_simulation_summary (
 );
 
 CREATE TABLE IF NOT EXISTS product_simulation_summary_by_day (
-    id SERIAL,
-    product_id UUID REFERENCES product_props (id),
+    product_simulation_summary_id INTEGER NOT NULL,
+    date DATE NOT NULL,
     probability_losses_by_missing DECIMAL(3,3) NOT NULL,
     probability_losses_by_nospace DECIMAL(3,3) NOT NULL,
     probability_losses_by_expirat DECIMAL(3,3) NOT NULL,
-    date DATE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (id, product_id, date)
+    PRIMARY KEY (product_simulation_summary_id, date)
 );
 
 CREATE TABLE IF NOT EXISTS product_batch (
     id SERIAL,
-    product_id UUID REFERENCES product_props (id),
+    product_id UUID REFERENCES product_props (id) NOT NULL,
     entry_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deadline_date TIMESTAMPTZ NOT NULL,
     finished_date TIMESTAMPTZ,

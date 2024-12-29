@@ -3,7 +3,7 @@ use sqlx::{types::BigDecimal, FromRow, Pool, Postgres};
 
 #[derive(Debug, FromRow, Clone)]
 pub struct GeneralConf { 
-    pub id : i16,                                          // SERIAL PRIMARY KEY,
+    pub id : i32,                                          // SERIAL PRIMARY KEY,
     pub default_simulation_forecast_days : i16,            // SMALLINT NOT NULL CHECK(default_simulation_forecast_days >= 0),
     pub default_scenario_random_range_factor : BigDecimal, // DECIMAL(3,2) NOT NULL,
     pub default_maximum_historic_days : i16,               // SMALLINT NOT NULL CHECK(default_maximum_historic_days >= 0),
@@ -78,7 +78,7 @@ mod tests {
         let repo = get_db_repo().await;
         let result = repo.find_all().await;
         let (elapsed, confs) = result.unwrap();
-        assert_eq!(confs.len(), 2);
+        assert_eq!(confs.len(), 3);
         eprintln!("Query took: {:?}, result: {:?}", elapsed, confs);
     }
 
@@ -86,9 +86,10 @@ mod tests {
     async fn find_last() {
         let repo = get_db_repo().await;
         let result = repo.find_last().await;
-        let (_elapsed, conf) = result.unwrap();
+        let (elapsed, conf) = result.unwrap();
         assert_eq!(1, 1);
-        //eprintln!("Query took: {:?}, result: {:?}", elapsed, products);
+        assert_eq!(3, conf.id);
+        eprintln!("Query took: {:?}, result: {:?}", elapsed, conf);
     }
 
     async fn get_db_repo() -> GeneralConfRepository {

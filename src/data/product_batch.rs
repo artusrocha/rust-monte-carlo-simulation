@@ -1,18 +1,19 @@
 use std::time::{Duration, Instant};
-use sqlx::{types::{BigDecimal, Uuid}, FromRow, Pool, Postgres};
+use chrono::Utc;
+use sqlx::{types::{BigDecimal, Uuid, chrono::DateTime}, FromRow, Pool, Postgres};
 
 #[derive(Debug, FromRow, Clone)]
-pub struct ProductBatch { 
-    pub id: Uuid,
-    pub simulation_forecast_days: Option<i16>,
-    pub scenario_random_range_factor: Option<BigDecimal>,
-    pub maximum_historic_days: Option<i16>,
-    pub maximum_quantity: i32,
-    pub minimum_quantity: i32,
-    pub active: bool,
-//    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-}
+pub struct ProductBatch {
+    pub id            : i32                   , // SERIAL,
+    pub product_id    : Uuid                  , // UUID REFERENCES product_props (id),
+    pub entry_date    : DateTime<Utc>         , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    pub deadline_date : DateTime<Utc>         , // TIMESTAMPTZ NOT NULL,
+    pub finished_date : Option<DateTime<Utc>> , // TIMESTAMPTZ,
+    pub is_finished   : bool                  , // BOOLEAN NOT NULL GENERATED ALWAYS AS (finished_date IS NOT NULL) STORED,
+    pub quantity      : i32                   , // INTEGER NOT NULL CHECK (quantity >= 0) DEFAULT 0,
+    // pub created_at    , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    // pub updated_at    , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+}// 
 
 pub struct ProductBatchRepository {
     db: Pool<Postgres>
@@ -32,14 +33,14 @@ impl ProductBatchRepository {
         let timer = Instant::now();
 
         let query = sqlx::query_as::<_, ProductBatch>("
-            SELECT 
-                id,
-                simulation_forecast_days,
-                scenario_random_range_factor,
-                maximum_historic_days,
-                maximum_quantity,
-                minimum_quantity,
-                active
+            SELECT
+              id           ,
+              product_id   ,
+              entry_date   ,
+              deadline_date,
+              finished_date,
+              is_finished  ,
+              quantity
             FROM product_batch;
         ");
 
@@ -48,29 +49,30 @@ impl ProductBatchRepository {
         Ok((timer.elapsed(), query_res))
     }
 
-    pub async fn find_all_by_status(
+    pub async fn find_all_by_product(
         &self,
-        is_active: bool,
+        product_id: Uuid,
     ) -> Result<(Duration, Vec<ProductBatch>), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
         let query = sqlx::query_as::<_, ProductBatch>("
-            SELECT 
-                id,
-                simulation_forecast_days,
-                scenario_random_range_factor,
-                maximum_historic_days,
-                maximum_quantity,
-                minimum_quantity,
-                active
+            SELECT
+              id           ,
+              product_id   ,
+              entry_date   ,
+              deadline_date,
+              finished_date,
+              is_finished  ,
+              quantity
             FROM product_batch
-            WHERE active = $1;
+            WHERE product_id = $1;
         ");
 
-        let query_res = query.bind(is_active).fetch_all(&self.db).await?;
+        let query_res = query.bind(product_id).fetch_all(&self.db).await?;
 
         Ok((timer.elapsed(), query_res))
     }
+
 
 }
 
@@ -82,32 +84,26 @@ mod tests {
 
     use super::*;
 
-    const PRODUCTS_QTY : usize = 50;
+    const BATCHES_QTY : usize = 750;
+
+    const BATCHES_BY_PRODUCT_QTY : usize = 15;
 
     #[tokio::test]
     async fn find_all() {
         let repo = get_db_repo().await;
         let result = repo.find_all().await;
         let (elapsed, products) = result.unwrap();
-        assert_eq!(products.len(), PRODUCTS_QTY);
+        assert_eq!(products.len(), BATCHES_QTY);
         eprintln!("Query took: {:?}, result: {:?}", elapsed, products);
     }
 
     #[tokio::test]
-    async fn find_all_by_status_is_active_true() {
+    async fn find_all_by_product() {
+        let product_id : Uuid = Uuid::parse_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(); 
         let repo = get_db_repo().await;
-        let result = repo.find_all_by_status(true).await;
+        let result = repo.find_all_by_product(product_id).await;
         let (_elapsed, products) = result.unwrap();
-        assert_eq!(products.len(), PRODUCTS_QTY);
-        //eprintln!("Query took: {:?}, result: {:?}", elapsed, products);
-    }
-
-        #[tokio::test]
-    async fn find_all_by_status_is_active_false() {
-        let repo = get_db_repo().await;
-        let result = repo.find_all_by_status(false).await;
-        let (_elapsed, products) = result.unwrap();
-        assert_eq!(products.len(), 0);
+        assert_eq!(products.len(), BATCHES_BY_PRODUCT_QTY);
         //eprintln!("Query took: {:?}, result: {:?}", elapsed, products);
     }
 
