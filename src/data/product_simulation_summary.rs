@@ -1,38 +1,39 @@
-use std::time::{Duration, Instant};
 use chrono::NaiveDate;
-use sqlx::{types::{BigDecimal, Uuid}, FromRow, Pool, Postgres};
+use sqlx::{
+    types::{BigDecimal, Uuid},
+    FromRow, Pool, Postgres,
+};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, FromRow, Clone)]
 pub struct ProductSimulationSummary {
-    pub id                            : i32,               // SERIAL,
-    pub product_id                    : Uuid,              // UUID REFERENCES product_props (id),
-    pub probability_losses_by_missing : BigDecimal,        // DECIMAL(3,3) NOT NULL,
-    pub probability_losses_by_nospace : BigDecimal,        // DECIMAL(3,3) NOT NULL,
-    pub probability_losses_by_expirat : BigDecimal,        // DECIMAL(3,3) NOT NULL,
-    pub start_date                    : NaiveDate,         // DATE NOT NULL,
-    pub end_date                      : NaiveDate,         // DATE NOT NULL,
-    pub first_date_with_losses        : Option<NaiveDate>, // DATE,
-    //pub created_at                    : , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    pub id: i32,                                   // SERIAL,
+    pub product_id: Uuid,                          // UUID REFERENCES product_props (id),
+    pub probability_losses_by_missing: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub probability_losses_by_nospace: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub probability_losses_by_expirat: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub start_date: NaiveDate,                     // DATE NOT NULL,
+    pub end_date: NaiveDate,                       // DATE NOT NULL,
+    pub first_date_with_losses: Option<NaiveDate>, // DATE,
+                                                   //pub created_at                    : , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 }
 
 pub struct ProductSimulationSummaryRepository {
-    db: Pool<Postgres>
+    db: Pool<Postgres>,
 }
 
 impl ProductSimulationSummaryRepository {
-
     pub fn new(db: Pool<Postgres>) -> ProductSimulationSummaryRepository {
-        ProductSimulationSummaryRepository {
-            db: db
-        }
+        ProductSimulationSummaryRepository { db: db }
     }
-    
+
     pub async fn find_all(
         &self,
     ) -> Result<(Duration, Vec<ProductSimulationSummary>), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
-        let query = sqlx::query_as::<_, ProductSimulationSummary>("
+        let query = sqlx::query_as::<_, ProductSimulationSummary>(
+            "
             SELECT
                 id                            ,
                 product_id                    ,
@@ -43,7 +44,8 @@ impl ProductSimulationSummaryRepository {
                 end_date                      ,
                 first_date_with_losses        
             FROM product_simulation_summary;
-        ");
+        ",
+        );
 
         let query_res = query.fetch_all(&self.db).await?;
 
@@ -56,7 +58,8 @@ impl ProductSimulationSummaryRepository {
     ) -> Result<(Duration, Vec<ProductSimulationSummary>), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
-        let query = sqlx::query_as::<_, ProductSimulationSummary>("
+        let query = sqlx::query_as::<_, ProductSimulationSummary>(
+            "
             SELECT 
                 id                            ,
                 product_id                    ,
@@ -68,13 +71,13 @@ impl ProductSimulationSummaryRepository {
                 first_date_with_losses
             FROM product_simulation_summary
             WHERE product_id = $1;
-        ");
+        ",
+        );
 
         let query_res = query.bind(product_id).fetch_all(&self.db).await?;
 
         Ok((timer.elapsed(), query_res))
     }
-
 }
 
 #[cfg(test)]
@@ -110,7 +113,8 @@ mod tests {
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
-            .await.unwrap();
+            .await
+            .unwrap();
         ProductSimulationSummaryRepository::new(pool)
     }
 }

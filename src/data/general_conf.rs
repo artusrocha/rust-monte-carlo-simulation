@@ -1,33 +1,29 @@
-use std::time::{Duration, Instant};
 use sqlx::{types::BigDecimal, FromRow, Pool, Postgres};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, FromRow, Clone)]
-pub struct GeneralConf { 
-    pub id : i32,                                          // SERIAL PRIMARY KEY,
-    pub default_simulation_forecast_days : i16,            // SMALLINT NOT NULL CHECK(default_simulation_forecast_days >= 0),
-    pub default_scenario_random_range_factor : BigDecimal, // DECIMAL(3,2) NOT NULL,
-    pub default_maximum_historic_days : i16,               // SMALLINT NOT NULL CHECK(default_maximum_historic_days >= 0),
-//    pub created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+pub struct GeneralConf {
+    pub id: i32,                                          // SERIAL PRIMARY KEY,
+    pub default_simulation_forecast_days: i16, // SMALLINT NOT NULL CHECK(default_simulation_forecast_days >= 0),
+    pub default_scenario_random_range_factor: BigDecimal, // DECIMAL(3,2) NOT NULL,
+    pub default_maximum_historic_days: i16, // SMALLINT NOT NULL CHECK(default_maximum_historic_days >= 0),
+                                            //    pub created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 }
 
 pub struct GeneralConfRepository {
-    db: Pool<Postgres>
+    db: Pool<Postgres>,
 }
 
 impl GeneralConfRepository {
-
     pub fn new(db: Pool<Postgres>) -> GeneralConfRepository {
-        GeneralConfRepository {
-            db: db
-        }
+        GeneralConfRepository { db: db }
     }
-    
-    pub async fn find_last(
-        &self,
-    ) -> Result<(Duration, GeneralConf), Box<dyn std::error::Error>> {
+
+    pub async fn find_last(&self) -> Result<(Duration, GeneralConf), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
-        let query = sqlx::query_as::<_, GeneralConf>("
+        let query = sqlx::query_as::<_, GeneralConf>(
+            "
             SELECT 
                 id,
                 default_simulation_forecast_days,
@@ -36,7 +32,8 @@ impl GeneralConfRepository {
             FROM general_conf
             ORDER BY id DESC
             LIMIT 1;
-        ");
+        ",
+        );
 
         let query_res = query.fetch_one(&self.db).await?;
 
@@ -48,7 +45,8 @@ impl GeneralConfRepository {
     ) -> Result<(Duration, Vec<GeneralConf>), Box<dyn std::error::Error>> {
         let timer = Instant::now();
 
-        let query = sqlx::query_as::<_, GeneralConf>("
+        let query = sqlx::query_as::<_, GeneralConf>(
+            "
             SELECT 
                 id,
                 default_simulation_forecast_days,
@@ -56,13 +54,13 @@ impl GeneralConfRepository {
                 default_maximum_historic_days
             FROM general_conf
             ORDER BY id ASC;
-        ");
+        ",
+        );
 
         let query_res = query.fetch_all(&self.db).await?;
 
         Ok((timer.elapsed(), query_res))
     }
-
 }
 
 #[cfg(test)]
@@ -98,7 +96,8 @@ mod tests {
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
-            .await.unwrap();
+            .await
+            .unwrap();
         GeneralConfRepository::new(pool)
     }
 }
