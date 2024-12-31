@@ -1,22 +1,23 @@
-use crate::simulation::orchestrator::Hist;
+use crate::data::product_mov_hist::ProductMovHist;
 
 use sqlx::types::BigDecimal;
+use uuid::Uuid;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{DateTime, Datelike, Utc};
 
 #[derive(Debug)]
 pub struct SimulationParameters {
-    initial_date: NaiveDate,
+    initial_date: DateTime<Utc>,
     pub stock_limit: u64,
     pub time_limit: u64,
-    historic_by_woy_and_dow: HashMap<i16, HashMap<i16, Hist>>,
-    default_hist: Hist,
+    historic_by_woy_and_dow: HashMap<i16, HashMap<i16, ProductMovHist>>,
+    default_hist: ProductMovHist,
 }
 
 impl SimulationParameters {
-    pub fn get_date_hist(&self, date: &NaiveDate) -> &Hist {
+    pub fn get_date_hist(&self, date: &DateTime<Utc>) -> &ProductMovHist {
         let woy = date.iso_week().week() as i16;
         let dow = date.weekday().number_from_monday() as i16;
         let date_hist_opt = self
@@ -30,10 +31,10 @@ impl SimulationParameters {
     }
 
     pub fn new(
-        initial_date: NaiveDate,
+        initial_date: DateTime<Utc>,
         stock_limit: u64,
         time_limit: u64,
-        historic: Vec<Hist>,
+        historic: Vec<ProductMovHist>,
     ) -> Self {
         Self {
             initial_date: initial_date,
@@ -44,7 +45,9 @@ impl SimulationParameters {
         }
     }
 
-    fn group_by_woy_and_dow(vec: Vec<Hist>) -> HashMap<i16, HashMap<i16, Hist>> {
+    fn group_by_woy_and_dow(
+        vec: Vec<ProductMovHist>,
+    ) -> HashMap<i16, HashMap<i16, ProductMovHist>> {
         let mut map = HashMap::new();
         for e in vec {
             let week = map.entry(e.week_of_year).or_insert_with(HashMap::new);
@@ -53,9 +56,9 @@ impl SimulationParameters {
         map
     }
 
-    fn get_default_hist() -> Hist {
-        Hist {
-            // product_id: product_id,
+    fn get_default_hist() -> ProductMovHist {
+        ProductMovHist {
+            product_id: Uuid::from_str("c45bd212-8fb8-449b-8cb9-1fb44c0a6cd4").unwrap(),
             entry_qty: BigDecimal::from(0),
             withdrawal_qty: BigDecimal::from(0),
             week_of_year: 0,
@@ -68,7 +71,6 @@ impl SimulationParameters {
 mod tests {
     use std::str::FromStr;
 
-    use chrono::Datelike;
     use sqlx::types::BigDecimal;
 
     use super::*;
@@ -76,99 +78,99 @@ mod tests {
     #[test]
     fn test_group_by_woy_and_dow() {
         let historic = vec![
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("52.5000").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("73.3333").unwrap(),
                 week_of_year: 32,
                 day_of_week: 0,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("58.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("82.1666").unwrap(),
                 week_of_year: 32,
                 day_of_week: 1,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("49.8333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("65.5000").unwrap(),
                 week_of_year: 32,
                 day_of_week: 2,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("75.5000").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("56.1666").unwrap(),
                 week_of_year: 32,
                 day_of_week: 3,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("67.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("56.1666").unwrap(),
                 week_of_year: 32,
                 day_of_week: 4,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("39.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("52.6666").unwrap(),
                 week_of_year: 32,
                 day_of_week: 5,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("52.5000").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("73.3333").unwrap(),
                 week_of_year: 32,
                 day_of_week: 6,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("52.5000").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("73.3333").unwrap(),
                 week_of_year: 33,
                 day_of_week: 0,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("58.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("82.1666").unwrap(),
                 week_of_year: 33,
                 day_of_week: 1,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("49.8333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("65.5000").unwrap(),
                 week_of_year: 33,
                 day_of_week: 2,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("75.5000").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("56.1666").unwrap(),
                 week_of_year: 33,
                 day_of_week: 3,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("67.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("56.1666").unwrap(),
                 week_of_year: 33,
                 day_of_week: 4,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("39.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("52.6666").unwrap(),
                 week_of_year: 33,
                 day_of_week: 5,
             },
-            Hist {
-                // product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
+            ProductMovHist {
+                product_id: Uuid::from_str("d0bd335e-fc46-408d-90fb-209ccc521fa1").unwrap(),
                 entry_qty: BigDecimal::from_str("39.3333").unwrap(),
                 withdrawal_qty: BigDecimal::from_str("52.6666").unwrap(),
                 week_of_year: 33,

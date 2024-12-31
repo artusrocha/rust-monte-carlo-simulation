@@ -1,21 +1,14 @@
 use crate::{
-    data, simulation::parameter::SimulationParameters, simulation::per_day::SimulationDay,
+    data::{product_batch::ProductBatchRepository, product_mov_hist::ProductMovHistRepository},
+    simulation::parameter::SimulationParameters,
+    simulation::per_day::SimulationDay,
 };
-use sqlx::{postgres::PgPoolOptions, query::QueryAs, types::BigDecimal, FromRow, Pool, Postgres};
+use sqlx::{postgres::PgPoolOptions, types::BigDecimal, Pool, Postgres};
 use uuid::Uuid;
 
-use std::{collections::LinkedList, env, time::Instant};
+use std::env;
 
-use chrono::{Datelike, Days, NaiveDate};
-
-#[derive(Debug, FromRow, Clone)]
-pub struct Hist {
-    //    product_id: Uuid,
-    pub entry_qty: BigDecimal,
-    pub withdrawal_qty: BigDecimal,
-    pub week_of_year: i16,
-    pub day_of_week: i16,
-}
+use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 
 pub async fn run(
     reference_date: &str,
@@ -28,20 +21,26 @@ pub async fn run(
     let (initial_week, final_week) = get_initial_and_final_weeks(initial_date, final_date);
 
     let db = get_db_conn_pool().await?;
+    let product_mov_hist_repository = ProductMovHistRepository::new(db.clone());
+    let product_batch_repository = ProductBatchRepository::new(db.clone());
 
-    let historic = do_query(product_id, initial_week, final_week, db).await?;
+    let (_, historic) = product_mov_hist_repository
+        .aggregate_by_product_id_and_week_of_year_and_day_of_week(
+            product_id,
+            initial_week,
+            final_week,
+        )
+        .await?;
+    let (_, product_batches) = product_batch_repository
+        .find_all_by_product(product_id)
+        .await?;
 
     let sim_param =
         SimulationParameters::new(initial_date, stock_limit, default_time_limit, historic);
 
-    let batch = SimulationItemBatch {
-        quantity: BigDecimal::from(100),
-        deadline_date: initial_date.checked_add_days(Days::new(10)).unwrap(),
-    };
-
     let simulation_day0 = SimulationDay {
         date: initial_date,
-        batches: LinkedList::from([batch]),
+        batches: product_batches,
         stock_time_limit_exceeded: None,
         stock_shortage: None,
         stock_limit_exceeded: None,
@@ -81,15 +80,21 @@ pub struct SimulationItemBatch {
     pub deadline_date: NaiveDate,
 }
 
-fn get_initial_and_final_weeks(initial_date: NaiveDate, final_date: NaiveDate) -> (u32, u32) {
-    (initial_date.iso_week().week(), final_date.iso_week().week())
+fn get_initial_and_final_weeks(
+    initial_date: DateTime<Utc>,
+    final_date: DateTime<Utc>,
+) -> (i16, i16) {
+    (
+        initial_date.iso_week().week() as i16,
+        final_date.iso_week().week() as i16,
+    )
 }
 
 fn get_initial_and_final_dates(
     reference_date: &str,
     days_to_analyze: u64,
-) -> Result<(NaiveDate, NaiveDate), Box<dyn std::error::Error>> {
-    let initial_date = NaiveDate::parse_from_str(reference_date, "%Y-%m-%d")?;
+) -> Result<(DateTime<Utc>, DateTime<Utc>), Box<dyn std::error::Error>> {
+    let initial_date = DateTime::parse_from_rfc3339(reference_date)?.to_utc();
     let final_date = initial_date
         .checked_add_days(Days::new(days_to_analyze))
         .expect("Failure to determine final_date");
@@ -98,30 +103,6 @@ fn get_initial_and_final_dates(
         initial_date, final_date
     );
     Ok((initial_date, final_date))
-}
-
-async fn do_query(
-    product_id: Uuid,
-    initial_week: u32,
-    final_week: u32,
-    db: Pool<Postgres>,
-) -> Result<Vec<Hist>, Box<dyn std::error::Error>> {
-    let weeks = get_all_week_between(initial_week, final_week);
-    eprintln!("weeks: ({:?})", weeks);
-    let query = get_query();
-    let start = Instant::now();
-    let historic = query
-        .bind(product_id)
-        .bind(&weeks[..])
-        .fetch_all(&db)
-        .await?;
-    let duration = start.elapsed();
-    println!(
-        "result set length: {:?}, elapsed {:?}",
-        &historic.len(),
-        duration
-    );
-    Ok(historic)
 }
 
 fn get_all_week_between(initial_value: u32, final_value: u32) -> Vec<i16> {
@@ -136,24 +117,6 @@ fn get_all_week_between(initial_value: u32, final_value: u32) -> Vec<i16> {
         .map(|v| v as i16)
         .collect::<Vec<i16>>();
     range
-}
-
-fn get_query<'a>() -> QueryAs<'a, Postgres, Hist, sqlx::postgres::PgArguments> {
-    sqlx::query_as::<_, Hist>(
-        "
-        SELECT 
-          item_id,
-          AVG(entry_qty) AS entry_qty,
-          AVG(withdrawal_qty) AS withdrawal_qty,
-          week_of_year,
-          day_of_week
-        FROM item_mov_hist
-        WHERE item_id = $1
-        AND   week_of_year = ANY ($2)
-        GROUP BY item_id, week_of_year, day_of_week
-        ORDER BY week_of_year, day_of_week;
-    ",
-    )
 }
 
 async fn get_db_conn_pool() -> Result<Pool<Postgres>, Box<dyn std::error::Error>> {
@@ -175,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_week_and_days_calc() {
-        let reference_date = "2023-09-05";
+        let reference_date = "2023-09-05T00:00:00Z";
         let days_to_analyze = 90;
 
         let (initial_date, final_date) =
@@ -191,7 +154,7 @@ mod tests {
         assert_eq!(initial_week, 36);
         assert_eq!(final_week, 49);
 
-        let reference_date = "2024-01-01";
+        let reference_date = "2024-01-01T00:00:00Z";
         let days_to_analyze = 90;
 
         let (initial_date, final_date) =

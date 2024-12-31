@@ -1,16 +1,12 @@
-use crate::{
-    simulation::orchestrator::SimulationItemBatch, simulation::parameter::SimulationParameters,
-};
+use crate::{data::product_batch::ProductBatch, simulation::parameter::SimulationParameters};
 use sqlx::types::BigDecimal;
 
-use std::collections::LinkedList;
-
-use chrono::{Days, NaiveDate};
+use chrono::{DateTime, Days, Utc};
 
 #[derive(Debug)]
 pub struct SimulationDay {
-    pub date: NaiveDate,
-    pub batches: LinkedList<SimulationItemBatch>,
+    pub date: DateTime<Utc>,
+    pub batches: Vec<ProductBatch>,
     pub stock_shortage: Option<BigDecimal>,
     pub stock_limit_exceeded: Option<BigDecimal>,
     pub stock_time_limit_exceeded: Option<BigDecimal>,
@@ -29,14 +25,14 @@ impl SimulationDay {
                 .reduce(|acc, e| acc + e)
         );
         while withdraw_qty > BigDecimal::from(0) && self.batches.len() > 0 {
-            match self.batches.front_mut() {
+            match self.batches.first_mut() {
                 Some(old) => {
                     if old.quantity > withdraw_qty {
-                        old.quantity = &old.quantity - withdraw_qty;
+                        old.quantity = &old.quantity - withdraw_qty.fractional_digit_count();
                         withdraw_qty = BigDecimal::from(0);
                     } else {
                         withdraw_qty = withdraw_qty - &old.quantity;
-                        self.batches.pop_front();
+                        self.batches.remove(0);
                     }
                 }
                 None => {}
@@ -70,19 +66,22 @@ impl SimulationDay {
             "before entry | entry_qty: {:?}, batches: {:?}",
             date_hist.entry_qty, batches_qty_sum
         );
-        let available = BigDecimal::from(sim_param.stock_limit) - batches_qty_sum.digits();
+        let available = BigDecimal::from(sim_param.stock_limit) - batches_qty_sum;
         let (final_entry_qty, exceeded_entry_qty) = if available > date_hist.entry_qty {
             (date_hist.entry_qty.clone(), BigDecimal::from(0))
         } else {
             (available.clone(), (date_hist.entry_qty.clone() - available))
         };
-        self.batches.push_back(SimulationItemBatch {
+        self.batches.push(ProductBatch {
             quantity: final_entry_qty,
             deadline_date: self
                 .date
                 .clone()
                 .checked_add_days(Days::new(sim_param.time_limit))
                 .unwrap(),
+            entry_date: self.date.clone(),
+            finished_date: None,
+            is_finished: false,
         });
         eprintln!(
             "after entry | entry_qty: {:?}, batches: {:?}",
@@ -95,8 +94,8 @@ impl SimulationDay {
         eprintln!("3: next_batches.len(): {:?}", self.batches.len());
         eprintln!(
             "front: {:?}, back: {:?}",
-            self.batches.front(),
-            self.batches.back()
+            self.batches.first(),
+            self.batches.last()
         );
         self.stock_limit_exceeded = if exceeded_entry_qty > BigDecimal::from(0) {
             Some(exceeded_entry_qty)
@@ -107,18 +106,15 @@ impl SimulationDay {
 
     fn do_rm_expired_batch_mov(&mut self) {
         let mut removed_quantity = BigDecimal::from(0);
-        self.batches = self
-            .batches
-            .clone()
-            .into_iter()
-            .filter(|e| {
-                let is_within_time = e.deadline_date >= self.date;
-                if !is_within_time {
-                    removed_quantity += e.quantity.clone();
-                }
-                is_within_time
-            })
-            .collect::<LinkedList<SimulationItemBatch>>();
+
+        for i in 0..self.batches.len() {
+            let e = &self.batches[i];
+            eprintln!("Element at position {}: {:?}", i, e);
+            if e.deadline_date > self.date {
+                removed_quantity += e.quantity.clone();
+                self.batches.remove(i);
+            }
+        }
         self.stock_time_limit_exceeded = if removed_quantity > BigDecimal::from(0) {
             Some(removed_quantity)
         } else {
@@ -144,10 +140,16 @@ impl SimulationDay {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
+    //use super::*;
 
     #[test]
     fn test() {
         //todo!()
+        let mut sum = 0;
+        for i in 1..4 {
+            sum = sum + i;
+            println!("{}", i);
+        }
+        assert_eq!(sum, 6);
     }
 }

@@ -7,13 +7,13 @@ use std::time::{Duration, Instant};
 
 #[derive(Debug, FromRow, Clone)]
 pub struct ProductBatch {
-    pub id: i32,                              // SERIAL,
-    pub product_id: Uuid,                     // UUID REFERENCES product_props (id),
-    pub entry_date: DateTime<Utc>,            // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    pub deadline_date: DateTime<Utc>,         // TIMESTAMPTZ NOT NULL,
+    //pub id: i32,                              // SERIAL,
+    //pub product_id: Uuid,                     // UUID REFERENCES product_props (id),
+    pub entry_date: DateTime<Utc>, // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    pub deadline_date: DateTime<Utc>, // TIMESTAMPTZ NOT NULL,
     pub finished_date: Option<DateTime<Utc>>, // TIMESTAMPTZ,
     pub is_finished: bool, // BOOLEAN NOT NULL GENERATED ALWAYS AS (finished_date IS NOT NULL) STORED,
-    pub quantity: i32,     // INTEGER NOT NULL CHECK (quantity >= 0) DEFAULT 0,
+    pub quantity: BigDecimal, // NUMERIC NOT NULL CHECK (quantity >= 0) DEFAULT 0,
                            // pub created_at    , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                            // pub updated_at    , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 } //
@@ -35,8 +35,8 @@ impl ProductBatchRepository {
         let query = sqlx::query_as::<_, ProductBatch>(
             "
             SELECT
-              id           ,
-              product_id   ,
+              --id           ,
+              --product_id   ,
               entry_date   ,
               deadline_date,
               finished_date,
@@ -60,8 +60,8 @@ impl ProductBatchRepository {
         let query = sqlx::query_as::<_, ProductBatch>(
             "
             SELECT
-              id           ,
-              product_id   ,
+              --id           ,
+              --product_id   ,
               entry_date   ,
               deadline_date,
               finished_date,

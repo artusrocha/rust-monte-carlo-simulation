@@ -22,8 +22,8 @@ echo "### Importing /sample/product_simulation_summary.tsv to product_simulation
 psql -c "COPY product_simulation_summary FROM '/sample/product_simulation_summary.tsv';"
 echo ""
 
-echo "### Importing /sample/product_simulation_summary.tsv to product_simulation_summary [$(wc -l sample/product_simulation_summary.tsv|cut -d' ' -f1) lines]"
-psql -c "COPY product_simulation_summary FROM '/sample/product_simulation_summary.tsv';"
+echo "### Importing /sample/product_simulation_summary_by_day.tsv to product_simulation_summary_by_day [$(wc -l sample/product_simulation_summary_by_day.tsv|cut -d' ' -f1) lines]"
+psql -c "COPY product_simulation_summary_by_day FROM '/sample/product_simulation_summary_by_day.tsv';"
 echo ""
 
 echo "### Importing /sample/general_conf.tsv to general_conf [$(wc -l sample/general_conf.tsv|cut -d' ' -f1) lines]"

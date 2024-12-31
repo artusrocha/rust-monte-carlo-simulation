@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS product_batch (
     deadline_date TIMESTAMPTZ NOT NULL,
     finished_date TIMESTAMPTZ,
     is_finished BOOLEAN NOT NULL GENERATED ALWAYS AS (finished_date IS NOT NULL) STORED,
-    quantity INTEGER NOT NULL CHECK (quantity >= 0) DEFAULT 0,
+    quantity NUMERIC(5, 0) NOT NULL CHECK (quantity >= 0) DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (id, product_id)
