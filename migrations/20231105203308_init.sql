@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS product_props (
     maximum_historic_days SMALLINT CHECK(maximum_historic_days >= 0),
     maximum_quantity INTEGER CHECK(maximum_quantity >= 0) NOT NULL,
     minimum_quantity INTEGER CHECK(minimum_quantity >= 0) DEFAULT 0 NOT NULL,
+    new_batch_default_expiration_days SMALLINT CHECK(new_batch_default_expiration_days >= 0) DEFAULT 0 NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

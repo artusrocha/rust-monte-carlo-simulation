@@ -3,6 +3,15 @@ use sqlx::{types::BigDecimal, FromRow, Pool, Postgres};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, FromRow, Clone)]
+pub struct NewProductSimulationSummaryByDay {
+    pub date: NaiveDate,                           // DATE NOT NULL,
+    pub probability_losses_by_missing: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub probability_losses_by_nospace: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub probability_losses_by_expirat: BigDecimal, // DECIMAL(3,3) NOT NULL,
+                                                   //pub created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+}
+
+#[derive(Debug, FromRow, Clone)]
 pub struct ProductSimulationSummaryByDay {
     pub product_simulation_summary_id: i32, // INTEGER NOT NULL,
     pub date: NaiveDate,                    // DATE NOT NULL,

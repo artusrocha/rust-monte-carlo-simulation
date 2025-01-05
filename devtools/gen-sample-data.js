@@ -17,7 +17,7 @@ console.log(`parsing date: ${process.argv[2]}`);
 const date = new Date(process.argv[2])
 console.log(`using date: ${date.toISOString()}`);
 
-const product_writer = getWriter("sample/product.tsv")
+const product_writer = getWriter("sample/product_props.tsv")
 const product_mov_hist_writer = getWriter("sample/product_mov_hist.tsv")
 const product_batch_writer = getWriter("sample/product_batch.tsv")
 
@@ -57,6 +57,7 @@ function genProduct(count) {
             1825,               // maximum_historic_days SMALLINT CHECK(default_maximum_historic >= 0),
             15*30,              // maximum_quantity INTEGER CHECK(maximum_quantity >= 0) NOT NULL,
             0,                  // minimum_quantity INTEGER CHECK(minimum_quantity >= 0) DEFAULT 0 NOT NULL,
+            getRandomIntBetween(10, 90), // new_batch_default_expiration_days SMALLINT
             true,               // active BOOLEAN NOT NULL DEFAULT TRUE,
             date.toISOString(), // created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             date.toISOString(), // updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

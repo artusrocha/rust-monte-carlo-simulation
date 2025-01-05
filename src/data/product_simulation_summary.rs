@@ -6,6 +6,19 @@ use sqlx::{
 use std::time::{Duration, Instant};
 
 #[derive(Debug, FromRow, Clone)]
+pub struct NewProductSimulationSummary {
+    pub id: i32,                                   // SERIAL,
+    pub product_id: Uuid,                          // UUID REFERENCES product_props (id),
+    pub probability_losses_by_missing: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub probability_losses_by_nospace: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub probability_losses_by_expirat: BigDecimal, // DECIMAL(3,3) NOT NULL,
+    pub start_date: NaiveDate,                     // DATE NOT NULL,
+    pub end_date: NaiveDate,                       // DATE NOT NULL,
+    pub first_date_with_losses: Option<NaiveDate>, // DATE,
+                                                   //pub created_at                    : , // TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+}
+
+#[derive(Debug, FromRow, Clone)]
 pub struct ProductSimulationSummary {
     pub id: i32,                                   // SERIAL,
     pub product_id: Uuid,                          // UUID REFERENCES product_props (id),

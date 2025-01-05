@@ -10,3 +10,4 @@ tokio = { version = "1.42.0", features = ["full"] }
 sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-native-tls", "postgres", "bigdecimal", "uuid", "chrono"] }
 chrono = "0.4.39"
 uuid = "1.11.0"
+bigdecimal = "0.4.7"

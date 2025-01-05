@@ -9,21 +9,24 @@ use chrono::{DateTime, Datelike, Utc};
 
 #[derive(Debug)]
 pub struct SimulationParameters {
-    initial_date: DateTime<Utc>,
-    pub stock_limit: u64,
-    pub time_limit: u64,
+    pub stock_maximum_quantity: u64,
+    pub new_batch_default_expiration_days: u64,
     historic_by_woy_and_dow: HashMap<i16, HashMap<i16, ProductMovHist>>,
     default_hist: ProductMovHist,
 }
 
 impl SimulationParameters {
     pub fn get_date_hist(&self, date: &DateTime<Utc>) -> &ProductMovHist {
-        let woy = date.iso_week().week() as i16;
-        let dow = date.weekday().number_from_monday() as i16;
+        let woy = date.iso_week().week0() as i16;
+        let dow = (date.weekday().num_days_from_sunday()) as i16;
         let date_hist_opt = self
             .historic_by_woy_and_dow
             .get(&woy)
             .and_then(|week| week.get(&dow));
+        eprintln!(
+            "get_date_hist date: {:?}, woy: {:?}, dow: {:?}, hist: {:?}",
+            date, woy, dow, date_hist_opt
+        );
         match date_hist_opt {
             Some(hist) => hist,
             None => &self.default_hist,
@@ -31,15 +34,13 @@ impl SimulationParameters {
     }
 
     pub fn new(
-        initial_date: DateTime<Utc>,
-        stock_limit: u64,
-        time_limit: u64,
+        stock_maximum_quantity: u64,
+        new_batch_default_expiration_days: u64,
         historic: Vec<ProductMovHist>,
     ) -> Self {
         Self {
-            initial_date: initial_date,
-            stock_limit: stock_limit,
-            time_limit: time_limit,
+            stock_maximum_quantity: stock_maximum_quantity,
+            new_batch_default_expiration_days: new_batch_default_expiration_days,
             historic_by_woy_and_dow: Self::group_by_woy_and_dow(historic),
             default_hist: Self::get_default_hist(),
         }

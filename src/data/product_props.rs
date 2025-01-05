@@ -12,6 +12,7 @@ pub struct ProductProps {
     pub maximum_historic_days: Option<i16>,
     pub maximum_quantity: i32,
     pub minimum_quantity: i32,
+    pub new_batch_default_expiration_days: i16,
     pub active: bool,
     //    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     //    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -40,6 +41,7 @@ impl ProductPropsRepository {
                 maximum_historic_days,
                 maximum_quantity,
                 minimum_quantity,
+                new_batch_default_expiration_days,
                 active
             FROM product_props;
         ",
@@ -65,6 +67,7 @@ impl ProductPropsRepository {
                 maximum_historic_days,
                 maximum_quantity,
                 minimum_quantity,
+                new_batch_default_expiration_days,
                 active
             FROM product_props
             WHERE active = $1;
@@ -72,6 +75,33 @@ impl ProductPropsRepository {
         );
 
         let query_res = query.bind(is_active).fetch_all(&self.db).await?;
+
+        Ok((timer.elapsed(), query_res))
+    }
+
+    pub(crate) async fn find_one_by_product(
+        &self,
+        product_id: Uuid,
+    ) -> Result<(Duration, ProductProps), Box<dyn std::error::Error>> {
+        let timer = Instant::now();
+
+        let query = sqlx::query_as::<_, ProductProps>(
+            "
+            SELECT 
+                id,
+                simulation_forecast_days,
+                scenario_random_range_factor,
+                maximum_historic_days,
+                maximum_quantity,
+                minimum_quantity,
+                new_batch_default_expiration_days,
+                active
+            FROM product_props
+            WHERE id = $1;
+        ",
+        );
+
+        let query_res = query.bind(product_id).fetch_one(&self.db).await?;
 
         Ok((timer.elapsed(), query_res))
     }

@@ -2,8 +2,8 @@
 
 alias psql='time docker exec -it pg psql -U montecarlo'
 
-echo "### Importing /sample/product.tsv [$(wc -l sample/product.tsv|cut -d' ' -f1) lines]"
-psql -c "COPY product_props FROM '/sample/product.tsv';"
+echo "### Importing /sample/product_props.tsv [$(wc -l sample/product_props.tsv|cut -d' ' -f1) lines]"
+psql -c "COPY product_props FROM '/sample/product_props.tsv';"
 echo ""
 
 echo "### Importing /sample/product_batch.tsv [$(wc -l sample/product_batch.tsv|cut -d' ' -f1) lines]"
